@@ -18,6 +18,21 @@ const initialNodes = [
   },
 ]
 
+// targetId が ancestorId の子孫（さらに下の階層）かどうかを調べる。
+// 親のつなぎ替えでループ（自分の子孫を自分の親にする）が起きないようにするために使う
+function isDescendant(edges, ancestorId, targetId) {
+  const stack = edges.filter((e) => e.source === ancestorId).map((e) => e.target)
+  const visited = new Set()
+  while (stack.length > 0) {
+    const current = stack.pop()
+    if (current === targetId) return true
+    if (visited.has(current)) continue
+    visited.add(current)
+    edges.filter((e) => e.source === current).forEach((e) => stack.push(e.target))
+  }
+  return false
+}
+
 function LogicTree() {
   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes)
   const [edges, setEdges, onEdgesChange] = useEdgesState([])
@@ -78,6 +93,36 @@ function LogicTree() {
     [edges, setNodes, setEdges],
   )
 
+  // childId の親を newParentId に変更する。ルートに親をつけたり、ループができる
+  // つなぎ替え（例: 自分の子孫を自分の親にする）は無視して何もしない
+  const setParent = useCallback(
+    (childId, newParentId, oldEdgeId) => {
+      if (!childId || !newParentId) return
+      if (childId === 'root') return
+      if (childId === newParentId) return
+      if (isDescendant(edges, childId, newParentId)) return
+
+      setEdges((eds) => {
+        const withoutOldParent = eds.filter((e) => e.target !== childId && e.id !== oldEdgeId)
+        return [
+          ...withoutOldParent,
+          { id: oldEdgeId ?? `edge-${newParentId}-${childId}`, source: newParentId, target: childId },
+        ]
+      })
+    },
+    [edges, setEdges],
+  )
+
+  const onConnect = useCallback(
+    (connection) => setParent(connection.target, connection.source),
+    [setParent],
+  )
+
+  const onReconnect = useCallback(
+    (oldEdge, newConnection) => setParent(newConnection.target, newConnection.source, oldEdge.id),
+    [setParent],
+  )
+
   return (
     <LogicTreeActionsContext.Provider value={{ addChild, updateContent, deleteNode }}>
       <div style={{ width: '100%', height: '100%' }}>
@@ -87,6 +132,9 @@ function LogicTree() {
           nodeTypes={nodeTypes}
           onNodesChange={onNodesChange}
           onEdgesChange={onEdgesChange}
+          onConnect={onConnect}
+          onReconnect={onReconnect}
+          edgesReconnectable
           fitView
         >
           <Background />

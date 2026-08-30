@@ -1,6 +1,7 @@
 import { useContext, useState } from 'react'
 import { Handle, Position, useNodeId } from '@xyflow/react'
 import { Paper, TextField, Typography, IconButton, Stack, CircularProgress } from '@mui/material'
+import { alpha } from '@mui/material/styles'
 import AddIcon from '@mui/icons-material/Add'
 import DeleteIcon from '@mui/icons-material/Delete'
 import LightbulbIcon from '@mui/icons-material/Lightbulb'
@@ -34,8 +35,27 @@ function LogicTreeNode({ data }) {
   }
 
   return (
-    <Paper variant="outlined" sx={{ minWidth: 220, maxWidth: 260, p: 1.5, borderRadius: 2 }}>
+    <Paper
+      variant="outlined"
+      sx={{
+        minWidth: 220,
+        maxWidth: 260,
+        p: 1.5,
+        borderRadius: 2,
+        ...(data.isRoot && {
+          borderColor: 'primary.main',
+          borderWidth: 2,
+          bgcolor: (theme) => alpha(theme.palette.primary.main, 0.06),
+        }),
+      }}
+    >
       <Handle type="target" position={Position.Top} />
+
+      {data.isRoot && (
+        <Typography variant="overline" color="primary" sx={{ display: 'block', lineHeight: 1 }}>
+          ゴール
+        </Typography>
+      )}
 
       {editing ? (
         <TextField

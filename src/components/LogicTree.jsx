@@ -277,6 +277,14 @@ function LogicTree({ question }) {
         >
           <Background />
           <Controls />
+          {nodes.length === 1 && (
+            <Panel position="top-left">
+              <Alert severity="info" sx={{ maxWidth: 360 }}>
+                ルートノードをクリックして考えを入力し、右下の＋ボタンで下の階層に分解していきましょう。
+                💡はヒント、✓はそのノードだけのチェックです。ある程度できたら「評価する」でツリー全体を確認できます。
+              </Alert>
+            </Panel>
+          )}
           <Panel position="top-right" style={{ display: 'flex', gap: 8 }}>
             <Button
               variant="outlined"

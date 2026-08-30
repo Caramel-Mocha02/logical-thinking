@@ -1,20 +1,19 @@
 import { ReactFlow, Background, Controls } from '@xyflow/react'
 import '@xyflow/react/dist/style.css'
 
-// Phase 3: React Flowが正しく動くかを確認するためのサンプルノード
-// 実際のロジックツリーの表示はPhase 4で作る
-const sampleNodes = [
+// ノード追加・編集はPhase 5で実装する。今はルートノードだけを表示する
+const initialNodes = [
   {
-    id: '1',
-    position: { x: 250, y: 100 },
-    data: { label: 'ロジックツリー（サンプル）' },
+    id: 'root',
+    position: { x: 300, y: 150 },
+    data: { label: 'ここに考えを入力' },
   },
 ]
 
 function LogicTree() {
   return (
     <div style={{ width: '100%', height: '100%' }}>
-      <ReactFlow nodes={sampleNodes} edges={[]} fitView>
+      <ReactFlow nodes={initialNodes} edges={[]} fitView>
         <Background />
         <Controls />
       </ReactFlow>

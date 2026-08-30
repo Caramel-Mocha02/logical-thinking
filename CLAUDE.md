@@ -44,7 +44,7 @@
 - [x] Phase 6: ノード移動・親変更
 - [x] Phase 7: Supabase Auth
 - [x] Phase 8: ツリー保存
-- [ ] Phase 9: お題管理
+- [x] Phase 9: お題管理
 - [ ] Phase 10: OpenAI APIによる評価
 - [ ] Phase 11: ヒント機能
 - [ ] Phase 12: 部分評価

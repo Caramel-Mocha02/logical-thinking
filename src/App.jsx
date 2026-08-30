@@ -1,21 +1,19 @@
 import { useEffect, useState } from 'react'
 import { AppBar, Toolbar, Typography, Box, Paper, Chip, Button, CircularProgress } from '@mui/material'
+import HistoryIcon from '@mui/icons-material/History'
 import LogicTree from './components/LogicTree.jsx'
+import HistoryPage from './components/HistoryPage.jsx'
 import { useAuth } from './auth/AuthContext.jsx'
 import LoginPage from './auth/LoginPage.jsx'
 import { supabase } from './supabaseClient.js'
 import { fetchRandomQuestion } from './lib/questions.js'
-
-const questionTypeLabel = {
-  how: 'How型',
-  why: 'Why型',
-  what: 'What型',
-}
+import questionTypeLabel from './lib/questionTypeLabel.js'
 
 function App() {
   const { session, loading } = useAuth()
   const [question, setQuestion] = useState(null)
   const [questionLoading, setQuestionLoading] = useState(true)
+  const [view, setView] = useState('tree') // 'tree' または 'history'
 
   const loadQuestion = () => {
     setQuestionLoading(true)
@@ -40,6 +38,10 @@ function App() {
     return <LoginPage />
   }
 
+  if (view === 'history') {
+    return <HistoryPage onBack={() => setView('tree')} />
+  }
+
   return (
     <Box sx={{ height: '100vh', display: 'flex', flexDirection: 'column' }}>
       <AppBar position="static">
@@ -47,9 +49,14 @@ function App() {
           <Typography variant="h6" component="div">
             ロジックツリートレーニング
           </Typography>
-          <Button color="inherit" onClick={() => supabase.auth.signOut()}>
-            ログアウト
-          </Button>
+          <Box>
+            <Button color="inherit" startIcon={<HistoryIcon />} onClick={() => setView('history')}>
+              履歴
+            </Button>
+            <Button color="inherit" onClick={() => supabase.auth.signOut()}>
+              ログアウト
+            </Button>
+          </Box>
         </Toolbar>
       </AppBar>
 

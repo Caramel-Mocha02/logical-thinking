@@ -77,11 +77,13 @@ function LogicTree({ question }) {
   const [nodeCheckResult, setNodeCheckResult] = useState(null) // { targetContent, scores, feedback }
   const [nodeCheckOpen, setNodeCheckOpen] = useState(false)
 
+  // ツリーの内容が変わったら、古い評価結果を保存してしまわないよう評価結果を破棄する
   const updateContent = useCallback(
     (id, content) => {
       setNodes((nds) =>
         nds.map((n) => (n.id === id ? { ...n, data: { ...n.data, label: content } } : n)),
       )
+      setEvaluation(null)
     },
     [setNodes],
   )
@@ -107,6 +109,7 @@ function LogicTree({ question }) {
 
       setNodes((nds) => [...nds, newNode])
       setEdges((eds) => [...eds, { id: `edge-${parentId}-${newId}`, source: parentId, target: newId }])
+      setEvaluation(null)
     },
     [nodes, edges, nextId, setNodes, setEdges],
   )
@@ -128,6 +131,7 @@ function LogicTree({ question }) {
 
       setNodes((nds) => nds.filter((n) => !toDelete.has(n.id)))
       setEdges((eds) => eds.filter((e) => !toDelete.has(e.source) && !toDelete.has(e.target)))
+      setEvaluation(null)
     },
     [edges, setNodes, setEdges],
   )
@@ -141,6 +145,7 @@ function LogicTree({ question }) {
       if (childId === newParentId) return
       if (isDescendant(edges, childId, newParentId)) return
 
+      setEvaluation(null)
       setEdges((eds) => {
         const withoutOldParent = eds.filter((e) => e.target !== childId && e.id !== oldEdgeId)
         return [
@@ -171,8 +176,14 @@ function LogicTree({ question }) {
         questionText: question.text,
         nodes,
         edges,
+        evaluation,
       })
-      setSnackbar({ severity: 'success', message: 'ロジックツリーを保存しました' })
+      setSnackbar({
+        severity: 'success',
+        message: evaluation
+          ? 'ロジックツリーと評価結果を保存しました'
+          : 'ロジックツリーを保存しました',
+      })
     } catch (err) {
       setSnackbar({ severity: 'error', message: `保存に失敗しました: ${err.message}` })
     } finally {

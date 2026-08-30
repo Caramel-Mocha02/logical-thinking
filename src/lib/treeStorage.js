@@ -1,7 +1,8 @@
 import { supabase } from '../supabaseClient.js'
 
-// ロジックツリー（お題＋ノード一覧）をSupabaseに保存する
-export async function saveTree({ userId, questionType, questionText, nodes, edges }) {
+// ロジックツリー（お題＋ノード一覧）をSupabaseに保存する。
+// evaluationが渡された場合は、その時点の評価結果も一緒に保存する
+export async function saveTree({ userId, questionType, questionText, nodes, edges, evaluation }) {
   const { data: tree, error: treeError } = await supabase
     .from('trees')
     .insert({ user_id: userId, question_type: questionType, question_text: questionText })
@@ -24,6 +25,18 @@ export async function saveTree({ userId, questionType, questionText, nodes, edge
 
   const { error: nodesError } = await supabase.from('nodes').insert(nodeRows)
   if (nodesError) throw nodesError
+
+  if (evaluation) {
+    const { error: evaluationError } = await supabase.from('evaluations').insert({
+      tree_id: tree.id,
+      scores: evaluation.scores,
+      total: evaluation.total,
+      good_points: evaluation.goodPoints,
+      improvements: evaluation.improvements,
+      deepen_nodes: evaluation.deepenNodes,
+    })
+    if (evaluationError) throw evaluationError
+  }
 
   return tree
 }

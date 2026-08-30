@@ -1,8 +1,12 @@
 import { useCallback, useState } from 'react'
-import { ReactFlow, Background, Controls, useNodesState, useEdgesState } from '@xyflow/react'
+import { ReactFlow, Background, Controls, Panel, useNodesState, useEdgesState } from '@xyflow/react'
 import '@xyflow/react/dist/style.css'
+import { Button, Snackbar, Alert } from '@mui/material'
+import SaveIcon from '@mui/icons-material/Save'
 import LogicTreeNode from './LogicTreeNode.jsx'
 import LogicTreeActionsContext from './LogicTreeActionsContext.jsx'
+import { useAuth } from '../auth/AuthContext.jsx'
+import { saveTree } from '../lib/treeStorage.js'
 
 const nodeTypes = { logicNode: LogicTreeNode }
 
@@ -33,10 +37,13 @@ function isDescendant(edges, ancestorId, targetId) {
   return false
 }
 
-function LogicTree() {
+function LogicTree({ question }) {
+  const { session } = useAuth()
   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes)
   const [edges, setEdges, onEdgesChange] = useEdgesState([])
   const [nextId, setNextId] = useState(1)
+  const [saving, setSaving] = useState(false)
+  const [snackbar, setSnackbar] = useState(null) // { severity, message }
 
   const updateContent = useCallback(
     (id, content) => {
@@ -123,6 +130,24 @@ function LogicTree() {
     [setParent],
   )
 
+  const handleSave = async () => {
+    setSaving(true)
+    try {
+      await saveTree({
+        userId: session.user.id,
+        questionType: question.type,
+        questionText: question.text,
+        nodes,
+        edges,
+      })
+      setSnackbar({ severity: 'success', message: 'ロジックツリーを保存しました' })
+    } catch (err) {
+      setSnackbar({ severity: 'error', message: `保存に失敗しました: ${err.message}` })
+    } finally {
+      setSaving(false)
+    }
+  }
+
   return (
     <LogicTreeActionsContext.Provider value={{ addChild, updateContent, deleteNode }}>
       <div style={{ width: '100%', height: '100%' }}>
@@ -139,8 +164,26 @@ function LogicTree() {
         >
           <Background />
           <Controls />
+          <Panel position="top-right">
+            <Button
+              variant="contained"
+              startIcon={<SaveIcon />}
+              onClick={handleSave}
+              disabled={saving}
+            >
+              {saving ? '保存中...' : '保存'}
+            </Button>
+          </Panel>
         </ReactFlow>
       </div>
+
+      <Snackbar
+        open={snackbar !== null}
+        autoHideDuration={4000}
+        onClose={() => setSnackbar(null)}
+      >
+        {snackbar && <Alert severity={snackbar.severity}>{snackbar.message}</Alert>}
+      </Snackbar>
     </LogicTreeActionsContext.Provider>
   )
 }

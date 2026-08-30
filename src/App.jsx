@@ -52,7 +52,7 @@ function App() {
       </Paper>
 
       <Box sx={{ flex: 1 }}>
-        <LogicTree />
+        <LogicTree question={question} />
       </Box>
     </Box>
   )

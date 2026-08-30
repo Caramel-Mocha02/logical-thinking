@@ -1,8 +1,9 @@
-import { AppBar, Toolbar, Typography, Container, Box } from '@mui/material'
+import { AppBar, Toolbar, Typography, Box } from '@mui/material'
+import LogicTree from './components/LogicTree.jsx'
 
 function App() {
   return (
-    <Box sx={{ minHeight: '100vh', bgcolor: 'grey.50' }}>
+    <Box sx={{ height: '100vh', display: 'flex', flexDirection: 'column' }}>
       <AppBar position="static">
         <Toolbar>
           <Typography variant="h6" component="div">
@@ -11,11 +12,9 @@ function App() {
         </Toolbar>
       </AppBar>
 
-      <Container sx={{ py: 4 }}>
-        <Typography variant="body1">
-          Material UIの導入が完了しました。
-        </Typography>
-      </Container>
+      <Box sx={{ flex: 1 }}>
+        <LogicTree />
+      </Box>
     </Box>
   )
 }

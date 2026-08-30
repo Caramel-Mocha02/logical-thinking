@@ -38,7 +38,7 @@
 
 - [x] Phase 1: React + Vite環境構築
 - [x] Phase 2: Material UI導入
-- [ ] Phase 3: React Flow導入
+- [x] Phase 3: React Flow導入
 - [ ] Phase 4: 空のロジックツリー表示
 - [ ] Phase 5: ノード追加・編集・削除
 - [ ] Phase 6: ノード移動・親変更

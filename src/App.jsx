@@ -1,5 +1,8 @@
-import { AppBar, Toolbar, Typography, Box, Paper, Chip } from '@mui/material'
+import { AppBar, Toolbar, Typography, Box, Paper, Chip, Button, CircularProgress } from '@mui/material'
 import LogicTree from './components/LogicTree.jsx'
+import { useAuth } from './auth/AuthContext.jsx'
+import LoginPage from './auth/LoginPage.jsx'
+import { supabase } from './supabaseClient.js'
 
 // お題管理（DB連携）はPhase 9で実装する。それまでは仮のお題を1つ固定で使う
 const question = {
@@ -14,13 +17,30 @@ const questionTypeLabel = {
 }
 
 function App() {
+  const { session, loading } = useAuth()
+
+  if (loading) {
+    return (
+      <Box sx={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <CircularProgress />
+      </Box>
+    )
+  }
+
+  if (!session) {
+    return <LoginPage />
+  }
+
   return (
     <Box sx={{ height: '100vh', display: 'flex', flexDirection: 'column' }}>
       <AppBar position="static">
-        <Toolbar>
+        <Toolbar sx={{ justifyContent: 'space-between' }}>
           <Typography variant="h6" component="div">
             ロジックツリートレーニング
           </Typography>
+          <Button color="inherit" onClick={() => supabase.auth.signOut()}>
+            ログアウト
+          </Button>
         </Toolbar>
       </AppBar>
 

@@ -15,6 +15,7 @@ dist-ssr
 # 環境変数（APIキーなどの秘密情報）
 .env
 .env.*
+!.env.example
 
 # Editor directories and files
 .vscode/*

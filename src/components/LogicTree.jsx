@@ -3,24 +3,29 @@ import { ReactFlow, Background, Controls, Panel, useNodesState, useEdgesState } 
 import '@xyflow/react/dist/style.css'
 import { Button, Snackbar, Alert } from '@mui/material'
 import SaveIcon from '@mui/icons-material/Save'
+import RateReviewIcon from '@mui/icons-material/RateReview'
 import LogicTreeNode from './LogicTreeNode.jsx'
 import LogicTreeActionsContext from './LogicTreeActionsContext.jsx'
+import EvaluationPanel from './EvaluationPanel.jsx'
 import { useAuth } from '../auth/AuthContext.jsx'
 import { saveTree } from '../lib/treeStorage.js'
+import { evaluateTree } from '../lib/evaluateTree.js'
 
 const nodeTypes = { logicNode: LogicTreeNode }
 
 const CHILD_SPACING = 260
 const CHILD_Y_OFFSET = 150
 
-const initialNodes = [
-  {
-    id: 'root',
-    type: 'logicNode',
-    position: { x: 300, y: 100 },
-    data: { label: '', isRoot: true },
-  },
-]
+function createInitialNodes(question) {
+  return [
+    {
+      id: 'root',
+      type: 'logicNode',
+      position: { x: 300, y: 100 },
+      data: { label: question?.text ?? '', isRoot: true },
+    },
+  ]
+}
 
 // targetId が ancestorId の子孫（さらに下の階層）かどうかを調べる。
 // 親のつなぎ替えでループ（自分の子孫を自分の親にする）が起きないようにするために使う
@@ -39,11 +44,14 @@ function isDescendant(edges, ancestorId, targetId) {
 
 function LogicTree({ question }) {
   const { session } = useAuth()
-  const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes)
+  const [nodes, setNodes, onNodesChange] = useNodesState(() => createInitialNodes(question))
   const [edges, setEdges, onEdgesChange] = useEdgesState([])
   const [nextId, setNextId] = useState(1)
   const [saving, setSaving] = useState(false)
   const [snackbar, setSnackbar] = useState(null) // { severity, message }
+  const [evaluating, setEvaluating] = useState(false)
+  const [evaluation, setEvaluation] = useState(null)
+  const [evaluationOpen, setEvaluationOpen] = useState(false)
 
   const updateContent = useCallback(
     (id, content) => {
@@ -148,6 +156,24 @@ function LogicTree({ question }) {
     }
   }
 
+  const handleEvaluate = async () => {
+    setEvaluating(true)
+    try {
+      const result = await evaluateTree({
+        questionType: question.type,
+        questionText: question.text,
+        nodes,
+        edges,
+      })
+      setEvaluation(result)
+      setEvaluationOpen(true)
+    } catch (err) {
+      setSnackbar({ severity: 'error', message: `評価に失敗しました: ${err.message}` })
+    } finally {
+      setEvaluating(false)
+    }
+  }
+
   return (
     <LogicTreeActionsContext.Provider value={{ addChild, updateContent, deleteNode }}>
       <div style={{ width: '100%', height: '100%' }}>
@@ -164,7 +190,15 @@ function LogicTree({ question }) {
         >
           <Background />
           <Controls />
-          <Panel position="top-right">
+          <Panel position="top-right" style={{ display: 'flex', gap: 8 }}>
+            <Button
+              variant="outlined"
+              startIcon={<RateReviewIcon />}
+              onClick={handleEvaluate}
+              disabled={evaluating}
+            >
+              {evaluating ? '評価中...' : '評価する'}
+            </Button>
             <Button
               variant="contained"
               startIcon={<SaveIcon />}
@@ -176,6 +210,12 @@ function LogicTree({ question }) {
           </Panel>
         </ReactFlow>
       </div>
+
+      <EvaluationPanel
+        open={evaluationOpen}
+        onClose={() => setEvaluationOpen(false)}
+        evaluation={evaluation}
+      />
 
       <Snackbar
         open={snackbar !== null}

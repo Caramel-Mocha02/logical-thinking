@@ -13,7 +13,7 @@
 - バックエンド: Node.js + Express
 - DB・認証: Supabase（PostgreSQL + Supabase Auth）
 - ORM: 使わない（Prismaは使わない。Supabaseクライアントを直接使う）
-- AI: OpenAI API
+- AI: Claude API（Anthropic）※指示書はOpenAI APIだったが、開発中にClaude APIに変更した
 
 ## コーディング方針
 
@@ -45,7 +45,7 @@
 - [x] Phase 7: Supabase Auth
 - [x] Phase 8: ツリー保存
 - [x] Phase 9: お題管理
-- [ ] Phase 10: OpenAI APIによる評価
+- [x] Phase 10: AI(Claude API)による評価
 - [ ] Phase 11: ヒント機能
 - [ ] Phase 12: 部分評価
 - [ ] Phase 13: 評価履歴
@@ -68,5 +68,6 @@
 
 ## 環境変数
 
-OpenAI APIキー、Supabaseの接続情報などの秘密情報は `.env` に置き、コミットしない
-（`.gitignore` に `.env` を含める）。
+Anthropic APIキー、Supabaseの接続情報などの秘密情報は `.env` に置き、コミットしない
+（`.gitignore` に `.env` を含める）。フロントエンド用は`logical-thinking/.env`、
+サーバー用は`logical-thinking/server/.env`に分かれている。

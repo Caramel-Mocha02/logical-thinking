@@ -40,12 +40,6 @@ function LogicTreeNode({ data }) {
           slotProps={{ htmlInput: { maxLength: MAX_LENGTH } }}
           onChange={(e) => setDraft(e.target.value)}
           onBlur={commit}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter' && !e.shiftKey) {
-              e.preventDefault()
-              commit()
-            }
-          }}
         />
       ) : (
         <Typography

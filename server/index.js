@@ -61,7 +61,7 @@ const SYSTEM_PROMPT = `あなたはロジックツリー作成トレーニング
   "deepenNodes": [{"content": "対象ノードの文章", "reason": "なぜもう一段深掘りすべきか"}]
 }`
 
-function parseEvaluationJson(text) {
+function parseJsonBlock(text) {
   // Claudeがコードフェンス付きで返してきた場合に備えて取り除く
   const cleaned = text.replace(/^```json\s*|```$/g, '').trim()
   return JSON.parse(cleaned)
@@ -89,7 +89,7 @@ ${buildTreeText(nodes) || '(ノードがありません)'}`
     })
 
     const textBlock = response.content.find((block) => block.type === 'text')
-    const evaluation = parseEvaluationJson(textBlock.text)
+    const evaluation = parseJsonBlock(textBlock.text)
     res.json(evaluation)
   } catch (err) {
     console.error(err)
@@ -135,6 +135,65 @@ ${path.map((c) => c || '(未入力)').join(' → ')}
   } catch (err) {
     console.error(err)
     res.status(500).json({ error: 'ヒントの取得に失敗しました' })
+  }
+})
+
+const CHECK_NODE_SYSTEM_PROMPT = `あなたはロジックツリー作成トレーニングを指導するコーチです。
+ユーザーが指定した1つのノードについて、次の4項目をそれぞれ100点満点で評価してください。
+
+- abstraction(抽象度: 親ノードと比べて粒度が揃っているか)
+- concreteness(具体性: 実行者がそのまま動けるくらい具体的に書かれているか)
+- causality(因果関係: 親ノードとの間に論理の飛躍がないか)
+- parentRelation(親ノードとの関係: 親ノードを分解した要素として適切か)
+
+重要なルール:
+- ユーザーの代わりに答えを完成させないでください。フィードバックでは、
+  具体的な答えそのものを書かず、「どの観点で」「なぜ」見直すとよいかだけを示してください。
+- 出力は、説明文を付けず、次のJSON形式のみを返してください。
+
+{
+  "scores": {
+    "abstraction": 0から100の整数,
+    "concreteness": 0から100の整数,
+    "causality": 0から100の整数,
+    "parentRelation": 0から100の整数
+  },
+  "feedback": "2〜4文程度のフィードバック"
+}`
+
+app.post('/api/check-node', async (req, res) => {
+  const { questionType, questionText, path } = req.body
+
+  if (!questionText || !Array.isArray(path) || path.length < 2) {
+    res.status(400).json({ error: 'questionTextと、親を含むpath(2件以上)が必要です' })
+    return
+  }
+
+  const targetContent = path[path.length - 1] || '(未入力)'
+  const parentContent = path[path.length - 2] || '(未入力)'
+
+  const userPrompt = `お題(${questionType}型): ${questionText}
+
+ルートから対象ノードまでの流れ:
+${path.map((c) => c || '(未入力)').join(' → ')}
+
+評価対象ノード: 「${targetContent}」
+親ノード: 「${parentContent}」`
+
+  try {
+    const response = await anthropic.messages.create({
+      model: 'claude-opus-5',
+      max_tokens: 1000,
+      system: CHECK_NODE_SYSTEM_PROMPT,
+      messages: [{ role: 'user', content: userPrompt }],
+    })
+
+    const textBlock = response.content.find((block) => block.type === 'text')
+    const result = parseJsonBlock(textBlock.text)
+    res.json(result)
+  } catch (err) {
+    console.error(err)
+    res.status(500).json({ error: 'チェックに失敗しました' })
   }
 })
 

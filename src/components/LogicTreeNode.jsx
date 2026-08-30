@@ -4,14 +4,22 @@ import { Paper, TextField, Typography, IconButton, Stack, CircularProgress } fro
 import AddIcon from '@mui/icons-material/Add'
 import DeleteIcon from '@mui/icons-material/Delete'
 import LightbulbIcon from '@mui/icons-material/Lightbulb'
+import FactCheckIcon from '@mui/icons-material/FactCheck'
 import LogicTreeActionsContext from './LogicTreeActionsContext.jsx'
 
 const MAX_LENGTH = 100
 
 function LogicTreeNode({ data }) {
   const nodeId = useNodeId()
-  const { addChild, updateContent, deleteNode, getHint, hintLoadingNodeId } =
-    useContext(LogicTreeActionsContext)
+  const {
+    addChild,
+    updateContent,
+    deleteNode,
+    getHint,
+    hintLoadingNodeId,
+    checkNode,
+    checkingNodeId,
+  } = useContext(LogicTreeActionsContext)
   const [editing, setEditing] = useState(false)
   const [draft, setDraft] = useState(data.label)
 
@@ -81,6 +89,21 @@ function LogicTreeNode({ data }) {
         >
           <AddIcon fontSize="small" />
         </IconButton>
+        {!data.isRoot && (
+          <IconButton
+            className="nodrag"
+            size="small"
+            onClick={() => checkNode(nodeId)}
+            disabled={checkingNodeId !== null}
+            title="このノードをチェック"
+          >
+            {checkingNodeId === nodeId ? (
+              <CircularProgress size={16} />
+            ) : (
+              <FactCheckIcon fontSize="small" />
+            )}
+          </IconButton>
+        )}
         {!data.isRoot && (
           <IconButton
             className="nodrag"

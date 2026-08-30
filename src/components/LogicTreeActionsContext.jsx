@@ -7,6 +7,8 @@ const LogicTreeActionsContext = createContext({
   deleteNode: () => {},
   getHint: () => {},
   hintLoadingNodeId: null,
+  checkNode: () => {},
+  checkingNodeId: null,
 })
 
 export default LogicTreeActionsContext

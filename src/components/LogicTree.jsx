@@ -8,10 +8,12 @@ import LogicTreeNode from './LogicTreeNode.jsx'
 import LogicTreeActionsContext from './LogicTreeActionsContext.jsx'
 import EvaluationPanel from './EvaluationPanel.jsx'
 import HintPanel from './HintPanel.jsx'
+import NodeCheckPanel from './NodeCheckPanel.jsx'
 import { useAuth } from '../auth/AuthContext.jsx'
 import { saveTree } from '../lib/treeStorage.js'
 import { evaluateTree } from '../lib/evaluateTree.js'
 import { fetchHint } from '../lib/hint.js'
+import { checkNode as checkNodeApi } from '../lib/checkNode.js'
 
 const nodeTypes = { logicNode: LogicTreeNode }
 
@@ -71,6 +73,9 @@ function LogicTree({ question }) {
   const [hintLoadingNodeId, setHintLoadingNodeId] = useState(null)
   const [hint, setHint] = useState(null) // { targetContent, text }
   const [hintOpen, setHintOpen] = useState(false)
+  const [checkingNodeId, setCheckingNodeId] = useState(null)
+  const [nodeCheckResult, setNodeCheckResult] = useState(null) // { targetContent, scores, feedback }
+  const [nodeCheckOpen, setNodeCheckOpen] = useState(false)
 
   const updateContent = useCallback(
     (id, content) => {
@@ -214,9 +219,38 @@ function LogicTree({ question }) {
     [nodes, edges, question],
   )
 
+  const handleCheckNode = useCallback(
+    async (nodeId) => {
+      setCheckingNodeId(nodeId)
+      try {
+        const path = getPathToNode(nodes, edges, nodeId)
+        const result = await checkNodeApi({
+          questionType: question.type,
+          questionText: question.text,
+          path,
+        })
+        setNodeCheckResult({ targetContent: path[path.length - 1], ...result })
+        setNodeCheckOpen(true)
+      } catch (err) {
+        setSnackbar({ severity: 'error', message: `チェックに失敗しました: ${err.message}` })
+      } finally {
+        setCheckingNodeId(null)
+      }
+    },
+    [nodes, edges, question],
+  )
+
   return (
     <LogicTreeActionsContext.Provider
-      value={{ addChild, updateContent, deleteNode, getHint, hintLoadingNodeId }}
+      value={{
+        addChild,
+        updateContent,
+        deleteNode,
+        getHint,
+        hintLoadingNodeId,
+        checkNode: handleCheckNode,
+        checkingNodeId,
+      }}
     >
       <div style={{ width: '100%', height: '100%' }}>
         <ReactFlow
@@ -260,6 +294,12 @@ function LogicTree({ question }) {
       />
 
       <HintPanel open={hintOpen} onClose={() => setHintOpen(false)} hint={hint} />
+
+      <NodeCheckPanel
+        open={nodeCheckOpen}
+        onClose={() => setNodeCheckOpen(false)}
+        result={nodeCheckResult}
+      />
 
       <Snackbar
         open={snackbar !== null}

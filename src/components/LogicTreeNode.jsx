@@ -1,15 +1,17 @@
 import { useContext, useState } from 'react'
 import { Handle, Position, useNodeId } from '@xyflow/react'
-import { Paper, TextField, Typography, IconButton, Stack } from '@mui/material'
+import { Paper, TextField, Typography, IconButton, Stack, CircularProgress } from '@mui/material'
 import AddIcon from '@mui/icons-material/Add'
 import DeleteIcon from '@mui/icons-material/Delete'
+import LightbulbIcon from '@mui/icons-material/Lightbulb'
 import LogicTreeActionsContext from './LogicTreeActionsContext.jsx'
 
 const MAX_LENGTH = 100
 
 function LogicTreeNode({ data }) {
   const nodeId = useNodeId()
-  const { addChild, updateContent, deleteNode } = useContext(LogicTreeActionsContext)
+  const { addChild, updateContent, deleteNode, getHint, hintLoadingNodeId } =
+    useContext(LogicTreeActionsContext)
   const [editing, setEditing] = useState(false)
   const [draft, setDraft] = useState(data.label)
 
@@ -58,6 +60,19 @@ function LogicTreeNode({ data }) {
       )}
 
       <Stack direction="row" spacing={0.5} sx={{ mt: 1, justifyContent: 'flex-end' }}>
+        <IconButton
+          className="nodrag"
+          size="small"
+          onClick={() => getHint(nodeId)}
+          disabled={hintLoadingNodeId !== null}
+          title="ヒントをもらう"
+        >
+          {hintLoadingNodeId === nodeId ? (
+            <CircularProgress size={16} />
+          ) : (
+            <LightbulbIcon fontSize="small" />
+          )}
+        </IconButton>
         <IconButton
           className="nodrag"
           size="small"

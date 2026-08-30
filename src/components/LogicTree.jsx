@@ -7,9 +7,11 @@ import RateReviewIcon from '@mui/icons-material/RateReview'
 import LogicTreeNode from './LogicTreeNode.jsx'
 import LogicTreeActionsContext from './LogicTreeActionsContext.jsx'
 import EvaluationPanel from './EvaluationPanel.jsx'
+import HintPanel from './HintPanel.jsx'
 import { useAuth } from '../auth/AuthContext.jsx'
 import { saveTree } from '../lib/treeStorage.js'
 import { evaluateTree } from '../lib/evaluateTree.js'
+import { fetchHint } from '../lib/hint.js'
 
 const nodeTypes = { logicNode: LogicTreeNode }
 
@@ -42,6 +44,20 @@ function isDescendant(edges, ancestorId, targetId) {
   return false
 }
 
+// ルートから対象ノードまでの経路(文章の配列)を求める
+function getPathToNode(nodes, edges, nodeId) {
+  const parentByChild = new Map(edges.map((e) => [e.target, e.source]))
+  const contentById = new Map(nodes.map((n) => [n.id, n.data.label]))
+
+  const path = []
+  let current = nodeId
+  while (current) {
+    path.unshift(contentById.get(current) ?? '')
+    current = parentByChild.get(current)
+  }
+  return path
+}
+
 function LogicTree({ question }) {
   const { session } = useAuth()
   const [nodes, setNodes, onNodesChange] = useNodesState(() => createInitialNodes(question))
@@ -52,6 +68,9 @@ function LogicTree({ question }) {
   const [evaluating, setEvaluating] = useState(false)
   const [evaluation, setEvaluation] = useState(null)
   const [evaluationOpen, setEvaluationOpen] = useState(false)
+  const [hintLoadingNodeId, setHintLoadingNodeId] = useState(null)
+  const [hint, setHint] = useState(null) // { targetContent, text }
+  const [hintOpen, setHintOpen] = useState(false)
 
   const updateContent = useCallback(
     (id, content) => {
@@ -174,8 +193,31 @@ function LogicTree({ question }) {
     }
   }
 
+  const getHint = useCallback(
+    async (nodeId) => {
+      setHintLoadingNodeId(nodeId)
+      try {
+        const path = getPathToNode(nodes, edges, nodeId)
+        const { hint: hintText } = await fetchHint({
+          questionType: question.type,
+          questionText: question.text,
+          path,
+        })
+        setHint({ targetContent: path[path.length - 1], text: hintText })
+        setHintOpen(true)
+      } catch (err) {
+        setSnackbar({ severity: 'error', message: `ヒントの取得に失敗しました: ${err.message}` })
+      } finally {
+        setHintLoadingNodeId(null)
+      }
+    },
+    [nodes, edges, question],
+  )
+
   return (
-    <LogicTreeActionsContext.Provider value={{ addChild, updateContent, deleteNode }}>
+    <LogicTreeActionsContext.Provider
+      value={{ addChild, updateContent, deleteNode, getHint, hintLoadingNodeId }}
+    >
       <div style={{ width: '100%', height: '100%' }}>
         <ReactFlow
           nodes={nodes}
@@ -216,6 +258,8 @@ function LogicTree({ question }) {
         onClose={() => setEvaluationOpen(false)}
         evaluation={evaluation}
       />
+
+      <HintPanel open={hintOpen} onClose={() => setHintOpen(false)} hint={hint} />
 
       <Snackbar
         open={snackbar !== null}

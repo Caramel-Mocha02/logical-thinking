@@ -97,5 +97,46 @@ ${buildTreeText(nodes) || '(ノードがありません)'}`
   }
 })
 
+const HINT_SYSTEM_PROMPT = `あなたはロジックツリー作成トレーニングを指導するコーチです。
+ユーザーが今取り組んでいるノードについて、次にどう考えを深めればよいか、
+方向性のヒントだけを2〜3文程度で示してください。
+
+重要なルール:
+- 具体的な答えそのもの(実際の打ち手や分解結果)を書いてはいけません。
+- 「〜という観点から考えてみましょう」のように、視点や切り口だけを提示してください。
+- 出力は、説明文や見出しを付けず、ヒントの本文だけを返してください。`
+
+app.post('/api/hint', async (req, res) => {
+  const { questionType, questionText, path } = req.body
+
+  if (!questionText || !Array.isArray(path) || path.length === 0) {
+    res.status(400).json({ error: 'questionTextとpathが必要です' })
+    return
+  }
+
+  const targetContent = path[path.length - 1] || '(未入力)'
+  const userPrompt = `お題(${questionType}型): ${questionText}
+
+ルートから対象ノードまでの流れ:
+${path.map((c) => c || '(未入力)').join(' → ')}
+
+一番下の「${targetContent}」というノードについて、ヒントをください。`
+
+  try {
+    const response = await anthropic.messages.create({
+      model: 'claude-opus-5',
+      max_tokens: 500,
+      system: HINT_SYSTEM_PROMPT,
+      messages: [{ role: 'user', content: userPrompt }],
+    })
+
+    const textBlock = response.content.find((block) => block.type === 'text')
+    res.json({ hint: textBlock.text.trim() })
+  } catch (err) {
+    console.error(err)
+    res.status(500).json({ error: 'ヒントの取得に失敗しました' })
+  }
+})
+
 const port = process.env.PORT || 3001
 app.listen(port, () => console.log(`server listening on port ${port}`))

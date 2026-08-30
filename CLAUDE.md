@@ -46,7 +46,7 @@
 - [x] Phase 8: ツリー保存
 - [x] Phase 9: お題管理
 - [x] Phase 10: AI(Claude API)による評価
-- [ ] Phase 11: ヒント機能
+- [x] Phase 11: ヒント機能
 - [ ] Phase 12: 部分評価
 - [ ] Phase 13: 評価履歴
 - [ ] Phase 14: UI改善

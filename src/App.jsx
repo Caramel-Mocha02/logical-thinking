@@ -3,6 +3,7 @@ import { AppBar, Toolbar, Typography, Box, Paper, Chip, Button, CircularProgress
 import HistoryIcon from '@mui/icons-material/History'
 import LogicTree from './components/LogicTree.jsx'
 import HistoryPage from './components/HistoryPage.jsx'
+import QuestionPicker from './components/QuestionPicker.jsx'
 import { useAuth } from './auth/AuthContext.jsx'
 import LoginPage from './auth/LoginPage.jsx'
 import { supabase } from './supabaseClient.js'
@@ -14,16 +15,15 @@ function App() {
   const [question, setQuestion] = useState(null)
   const [questionLoading, setQuestionLoading] = useState(true)
   const [view, setView] = useState('tree') // 'tree' または 'history'
-
-  const loadQuestion = () => {
-    setQuestionLoading(true)
-    fetchRandomQuestion()
-      .then(setQuestion)
-      .finally(() => setQuestionLoading(false))
-  }
+  const [pickerOpen, setPickerOpen] = useState(false)
 
   useEffect(() => {
-    if (session) loadQuestion()
+    if (session) {
+      setQuestionLoading(true)
+      fetchRandomQuestion()
+        .then(setQuestion)
+        .finally(() => setQuestionLoading(false))
+    }
   }, [session])
 
   if (loading) {
@@ -67,8 +67,8 @@ function App() {
           <>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
               <Chip label={questionTypeLabel[question.type]} size="small" />
-              <Button size="small" onClick={loadQuestion}>
-                別のお題にする
+              <Button size="small" onClick={() => setPickerOpen(true)}>
+                お題を選ぶ
               </Button>
             </Box>
             <Typography variant="h6" component="h1">
@@ -81,6 +81,12 @@ function App() {
       <Box sx={{ flex: 1 }}>
         {question && <LogicTree key={question.id} question={question} />}
       </Box>
+
+      <QuestionPicker
+        open={pickerOpen}
+        onClose={() => setPickerOpen(false)}
+        onSelect={setQuestion}
+      />
     </Box>
   )
 }

@@ -10,7 +10,8 @@
 - フロントエンド: React + Vite + JavaScript（TypeScriptは使わない）
 - UI: Material UI（Tailwindは使わない）
 - ツリー描画: React Flow
-- バックエンド: Node.js + Express
+- バックエンド: Supabase Edge Functions（Deno）※指示書はNode.js + Expressだったが、
+  Vercel等へのデプロイをシンプルにするため開発中にEdge Functionsへ変更した
 - DB・認証: Supabase（PostgreSQL + Supabase Auth）
 - ORM: 使わない（Prismaは使わない。Supabaseクライアントを直接使う）
 - AI: Claude API（Anthropic）※指示書はOpenAI APIだったが、開発中にClaude APIに変更した
@@ -68,6 +69,7 @@
 
 ## 環境変数
 
-Anthropic APIキー、Supabaseの接続情報などの秘密情報は `.env` に置き、コミットしない
-（`.gitignore` に `.env` を含める）。フロントエンド用は`logical-thinking/.env`、
-サーバー用は`logical-thinking/server/.env`に分かれている。
+- フロントエンド: Supabaseの接続情報を`logical-thinking/.env`に置く（コミットしない）
+- Anthropic APIキー: Supabase Edge Functionsのシークレットとして保存する
+  （`supabase secrets set ANTHROPIC_API_KEY=...`。Edge Function内では
+  `Deno.env.get('ANTHROPIC_API_KEY')`で読み込む。ローカルに鍵ファイルは置かない）

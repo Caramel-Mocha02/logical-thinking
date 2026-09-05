@@ -1,6 +1,6 @@
-const API_URL = import.meta.env.VITE_API_URL
+import { supabase } from '../supabaseClient.js'
 
-// ロジックツリーをサーバー(Express)経由でAIに評価してもらう
+// ロジックツリーをSupabase Edge Functions経由でAIに評価してもらう
 export async function evaluateTree({ questionType, questionText, nodes, edges }) {
   const parentIdByNodeId = new Map(edges.map((e) => [e.target, e.source]))
 
@@ -10,16 +10,10 @@ export async function evaluateTree({ questionType, questionText, nodes, edges })
     content: n.data.label ?? '',
   }))
 
-  const res = await fetch(`${API_URL}/api/evaluate`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ questionType, questionText, nodes: treeNodes }),
+  const { data, error } = await supabase.functions.invoke('evaluate', {
+    body: { questionType, questionText, nodes: treeNodes },
   })
 
-  if (!res.ok) {
-    const body = await res.json().catch(() => ({}))
-    throw new Error(body.error || `評価に失敗しました (HTTP ${res.status})`)
-  }
-
-  return res.json()
+  if (error) throw new Error(error.message || '評価に失敗しました')
+  return data
 }

@@ -16,7 +16,9 @@ import {
 } from '@mui/material'
 import ArrowBackIcon from '@mui/icons-material/ArrowBack'
 import questionTypeLabel from '../lib/questionTypeLabel.js'
+import evaluationScoreLabel from '../lib/evaluationScoreLabel.js'
 import { fetchTreeHistory, fetchTreeNodes } from '../lib/history.js'
+import { computeEvaluationStats } from '../lib/evaluationStats.js'
 
 function buildReadOnlyTree(nodeRows) {
   const nodes = nodeRows.map((row) => ({
@@ -138,6 +140,23 @@ function TreeDetail({ tree, onBack }) {
   )
 }
 
+function StatsSummary({ trees }) {
+  const stats = computeEvaluationStats(trees)
+  if (!stats) return null
+
+  return (
+    <Box sx={{ p: 2, bgcolor: 'grey.50', borderBottom: 1, borderColor: 'divider' }}>
+      <Typography variant="subtitle1">
+        平均点: {stats.averageTotal}点（評価済み{stats.count}件から算出）
+      </Typography>
+      <Typography variant="body2" color="text.secondary">
+        弱点: {evaluationScoreLabel[stats.weakestKey]}（平均{stats.averageScores[stats.weakestKey]}
+        点）が7項目中もっとも低めです。次にツリーを作るときはここを意識してみましょう。
+      </Typography>
+    </Box>
+  )
+}
+
 function HistoryPage({ onBack }) {
   const [trees, setTrees] = useState(null)
   const [error, setError] = useState('')
@@ -182,11 +201,14 @@ function HistoryPage({ onBack }) {
               </Typography>
             )}
             {trees && trees.length > 0 && (
-              <List disablePadding>
-                {trees.map((tree) => (
-                  <TreeListItem key={tree.id} tree={tree} onClick={() => setSelectedTree(tree)} />
-                ))}
-              </List>
+              <>
+                <StatsSummary trees={trees} />
+                <List disablePadding>
+                  {trees.map((tree) => (
+                    <TreeListItem key={tree.id} tree={tree} onClick={() => setSelectedTree(tree)} />
+                  ))}
+                </List>
+              </>
             )}
           </>
         )}

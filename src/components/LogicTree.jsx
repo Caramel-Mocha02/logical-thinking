@@ -4,6 +4,8 @@ import '@xyflow/react/dist/style.css'
 import { Button, Snackbar, Alert } from '@mui/material'
 import SaveIcon from '@mui/icons-material/Save'
 import RateReviewIcon from '@mui/icons-material/RateReview'
+import SwapHorizIcon from '@mui/icons-material/SwapHoriz'
+import SwapVertIcon from '@mui/icons-material/SwapVert'
 import LogicTreeNode from './LogicTreeNode.jsx'
 import LogicTreeActionsContext from './LogicTreeActionsContext.jsx'
 import EvaluationPanel from './EvaluationPanel.jsx'
@@ -18,7 +20,8 @@ import { checkNode as checkNodeApi } from '../lib/checkNode.js'
 const nodeTypes = { logicNode: LogicTreeNode }
 
 const CHILD_SPACING = 260
-const CHILD_Y_OFFSET = 150
+const VERTICAL_DEPTH_OFFSET = 150 // 縦向き: ノードの高さより広ければよい
+const HORIZONTAL_DEPTH_OFFSET = 300 // 横向き: ノードの最大幅(260px)より広くして重ならないようにする
 
 function createInitialNodes(question) {
   return [
@@ -76,6 +79,7 @@ function LogicTree({ question }) {
   const [checkingNodeId, setCheckingNodeId] = useState(null)
   const [nodeCheckResult, setNodeCheckResult] = useState(null) // { targetContent, scores, feedback }
   const [nodeCheckOpen, setNodeCheckOpen] = useState(false)
+  const [orientation, setOrientation] = useState('vertical') // 'vertical' または 'horizontal'
 
   // ツリーの内容が変わったら、古い評価結果を保存してしまわないよう評価結果を破棄する
   const updateContent = useCallback(
@@ -97,13 +101,21 @@ function LogicTree({ question }) {
       const newId = `node-${nextId}`
       setNextId((n) => n + 1)
 
+      const position =
+        orientation === 'vertical'
+          ? {
+              x: parent.position.x - 130 + childCount * CHILD_SPACING,
+              y: parent.position.y + VERTICAL_DEPTH_OFFSET,
+            }
+          : {
+              x: parent.position.x + HORIZONTAL_DEPTH_OFFSET,
+              y: parent.position.y - 70 + childCount * CHILD_SPACING,
+            }
+
       const newNode = {
         id: newId,
         type: 'logicNode',
-        position: {
-          x: parent.position.x - 130 + childCount * CHILD_SPACING,
-          y: parent.position.y + CHILD_Y_OFFSET,
-        },
+        position,
         data: { label: '' },
       }
 
@@ -111,7 +123,7 @@ function LogicTree({ question }) {
       setEdges((eds) => [...eds, { id: `edge-${parentId}-${newId}`, source: parentId, target: newId }])
       setEvaluation(null)
     },
-    [nodes, edges, nextId, setNodes, setEdges],
+    [nodes, edges, nextId, orientation, setNodes, setEdges],
   )
 
   const deleteNode = useCallback(
@@ -261,6 +273,7 @@ function LogicTree({ question }) {
         hintLoadingNodeId,
         checkNode: handleCheckNode,
         checkingNodeId,
+        orientation,
       }}
     >
       <div style={{ width: '100%', height: '100%' }}>
@@ -276,7 +289,7 @@ function LogicTree({ question }) {
           fitView
         >
           <Background />
-          <Controls />
+          <Controls showInteractive={false} />
           {nodes.length === 1 && (
             <Panel position="top-left">
               <Alert severity="info" sx={{ maxWidth: 360 }}>
@@ -286,6 +299,15 @@ function LogicTree({ question }) {
             </Panel>
           )}
           <Panel position="top-right" style={{ display: 'flex', gap: 8 }}>
+            <Button
+              variant="outlined"
+              startIcon={orientation === 'vertical' ? <SwapHorizIcon /> : <SwapVertIcon />}
+              onClick={() =>
+                setOrientation((o) => (o === 'vertical' ? 'horizontal' : 'vertical'))
+              }
+            >
+              {orientation === 'vertical' ? '横向きにする' : '縦向きにする'}
+            </Button>
             <Button
               variant="outlined"
               startIcon={<RateReviewIcon />}

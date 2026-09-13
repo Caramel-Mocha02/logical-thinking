@@ -20,7 +20,10 @@ function LogicTreeNode({ data }) {
     hintLoadingNodeId,
     checkNode,
     checkingNodeId,
+    orientation,
   } = useContext(LogicTreeActionsContext)
+  const targetPosition = orientation === 'vertical' ? Position.Top : Position.Left
+  const sourcePosition = orientation === 'vertical' ? Position.Bottom : Position.Right
   const [editing, setEditing] = useState(false)
   const [draft, setDraft] = useState(data.label)
 
@@ -49,7 +52,7 @@ function LogicTreeNode({ data }) {
         }),
       }}
     >
-      <Handle type="target" position={Position.Top} />
+      <Handle type="target" position={targetPosition} />
 
       {data.isRoot && (
         <Typography variant="overline" color="primary" sx={{ display: 'block', lineHeight: 1 }}>
@@ -136,7 +139,7 @@ function LogicTreeNode({ data }) {
         )}
       </Stack>
 
-      <Handle type="source" position={Position.Bottom} />
+      <Handle type="source" position={sourcePosition} />
     </Paper>
   )
 }

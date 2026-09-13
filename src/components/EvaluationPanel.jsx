@@ -12,16 +12,7 @@ import {
   ListItemText,
   Divider,
 } from '@mui/material'
-
-const scoreLabel = {
-  logic: '論理性',
-  mece: 'MECE',
-  hierarchy: '階層構造',
-  abstraction: '抽象度',
-  causality: '因果関係',
-  concreteness: '具体性',
-  expression: '文章表現',
-}
+import evaluationScoreLabel from '../lib/evaluationScoreLabel.js'
 
 function ScoreBar({ label, value }) {
   return (
@@ -51,7 +42,7 @@ function EvaluationPanel({ open, onClose, evaluation }) {
           <Typography variant="h3">{total}点</Typography>
         </Box>
 
-        {Object.entries(scoreLabel).map(([key, label]) => (
+        {Object.entries(evaluationScoreLabel).map(([key, label]) => (
           <ScoreBar key={key} label={label} value={scores[key]} />
         ))}
 

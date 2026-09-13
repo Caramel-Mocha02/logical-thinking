@@ -9,6 +9,7 @@ const LogicTreeActionsContext = createContext({
   hintLoadingNodeId: null,
   checkNode: () => {},
   checkingNodeId: null,
+  orientation: 'vertical',
 })
 
 export default LogicTreeActionsContext

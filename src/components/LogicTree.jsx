@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react'
+import { useCallback, useRef, useState } from 'react'
 import { ReactFlow, Background, Controls, Panel, useNodesState, useEdgesState } from '@xyflow/react'
 import '@xyflow/react/dist/style.css'
 import { Button, Snackbar, Alert } from '@mui/material'
@@ -80,6 +80,14 @@ function LogicTree({ question }) {
   const [nodeCheckResult, setNodeCheckResult] = useState(null) // { targetContent, scores, feedback }
   const [nodeCheckOpen, setNodeCheckOpen] = useState(false)
   const [orientation, setOrientation] = useState('vertical') // 'vertical' または 'horizontal'
+  const reactFlowInstanceRef = useRef(null)
+
+  // 新しいノードが画面外に配置されて「見えない」ことがないよう、追加のたびに全体を表示し直す
+  const fitViewSoon = () => {
+    requestAnimationFrame(() => {
+      reactFlowInstanceRef.current?.fitView({ padding: 0.3, duration: 300 })
+    })
+  }
 
   // ツリーの内容が変わったら、古い評価結果を保存してしまわないよう評価結果を破棄する
   const updateContent = useCallback(
@@ -122,6 +130,7 @@ function LogicTree({ question }) {
       setNodes((nds) => [...nds, newNode])
       setEdges((eds) => [...eds, { id: `edge-${parentId}-${newId}`, source: parentId, target: newId }])
       setEvaluation(null)
+      fitViewSoon()
     },
     [nodes, edges, nextId, orientation, setNodes, setEdges],
   )
@@ -287,6 +296,9 @@ function LogicTree({ question }) {
           onReconnect={onReconnect}
           edgesReconnectable
           fitView
+          onInit={(instance) => {
+            reactFlowInstanceRef.current = instance
+          }}
         >
           <Background />
           <Controls showInteractive={false} />

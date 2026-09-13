@@ -295,6 +295,7 @@ function LogicTree({ question }) {
           onConnect={onConnect}
           onReconnect={onReconnect}
           edgesReconnectable
+          defaultEdgeOptions={{ type: 'smoothstep' }}
           fitView
           onInit={(instance) => {
             reactFlowInstanceRef.current = instance

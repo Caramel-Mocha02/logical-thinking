@@ -1,5 +1,14 @@
-import { useCallback, useRef, useState } from 'react'
-import { ReactFlow, Background, Controls, Panel, useNodesState, useEdgesState } from '@xyflow/react'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import {
+  ReactFlow,
+  ReactFlowProvider,
+  Background,
+  Controls,
+  Panel,
+  useNodesState,
+  useEdgesState,
+  useUpdateNodeInternals,
+} from '@xyflow/react'
 import '@xyflow/react/dist/style.css'
 import { Button, Snackbar, Alert } from '@mui/material'
 import SaveIcon from '@mui/icons-material/Save'
@@ -64,6 +73,16 @@ function getPathToNode(nodes, edges, nodeId) {
 }
 
 function LogicTree({ question }) {
+  return (
+    <ReactFlowProvider>
+      <LogicTreeInner question={question} />
+    </ReactFlowProvider>
+  )
+}
+
+// useUpdateNodeInternalsなどのReact FlowのフックはReactFlowProviderの内側でしか
+// 使えないため、実際の処理はこの内側コンポーネントで行う
+function LogicTreeInner({ question }) {
   const { session } = useAuth()
   const [nodes, setNodes, onNodesChange] = useNodesState(() => createInitialNodes(question))
   const [edges, setEdges, onEdgesChange] = useEdgesState([])
@@ -81,6 +100,14 @@ function LogicTree({ question }) {
   const [nodeCheckOpen, setNodeCheckOpen] = useState(false)
   const [orientation, setOrientation] = useState('vertical') // 'vertical' または 'horizontal'
   const reactFlowInstanceRef = useRef(null)
+  const updateNodeInternals = useUpdateNodeInternals()
+
+  // 向きを切り替えたときに、接続点(Handle)の位置をReact Flowに再計測させる。
+  // これをしないと、見た目の点の位置と実際に線がつながる位置がずれてしまう
+  useEffect(() => {
+    nodes.forEach((n) => updateNodeInternals(n.id))
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [orientation])
 
   // 新しいノードが画面外に配置されて「見えない」ことがないよう、追加のたびに全体を表示し直す
   const fitViewSoon = () => {
@@ -295,7 +322,7 @@ function LogicTree({ question }) {
           onConnect={onConnect}
           onReconnect={onReconnect}
           edgesReconnectable
-          defaultEdgeOptions={{ type: 'smoothstep' }}
+          defaultEdgeOptions={{ type: 'straight' }}
           fitView
           onInit={(instance) => {
             reactFlowInstanceRef.current = instance
@@ -367,3 +394,4 @@ function LogicTree({ question }) {
 }
 
 export default LogicTree
+

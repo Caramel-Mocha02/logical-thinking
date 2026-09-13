@@ -95,7 +95,7 @@ function TreeDetail({ tree, onBack }) {
             nodesDraggable={false}
             nodesConnectable={false}
             elementsSelectable={false}
-            defaultEdgeOptions={{ type: 'smoothstep' }}
+            defaultEdgeOptions={{ type: 'straight' }}
             fitView
           >
             <Background />

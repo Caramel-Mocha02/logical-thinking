@@ -18,6 +18,7 @@ function LogicTreeNode({ data }) {
     deleteNode,
     getHint,
     hintLoadingNodeId,
+    hintRemaining,
     checkNode,
     checkingNodeId,
     orientation,
@@ -95,8 +96,8 @@ function LogicTreeNode({ data }) {
           className="nodrag"
           size="small"
           onClick={() => getHint(nodeId)}
-          disabled={hintLoadingNodeId !== null}
-          title="ヒントをもらう"
+          disabled={hintLoadingNodeId !== null || hintRemaining <= 0}
+          title={`ヒントをもらう（残り${hintRemaining}回）`}
         >
           {hintLoadingNodeId === nodeId ? (
             <CircularProgress size={16} />

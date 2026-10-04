@@ -20,6 +20,7 @@ import LogicTreeActionsContext from './LogicTreeActionsContext.jsx'
 import EvaluationPanel from './EvaluationPanel.jsx'
 import HintPanel from './HintPanel.jsx'
 import NodeCheckPanel from './NodeCheckPanel.jsx'
+import TimerControl from './TimerControl.jsx'
 import { useAuth } from '../auth/AuthContext.jsx'
 import { saveTree } from '../lib/treeStorage.js'
 import { evaluateTree } from '../lib/evaluateTree.js'
@@ -31,6 +32,7 @@ const nodeTypes = { logicNode: LogicTreeNode }
 const CHILD_SPACING = 260
 const VERTICAL_DEPTH_OFFSET = 150 // 縦向き: ノードの高さより広ければよい
 const HORIZONTAL_DEPTH_OFFSET = 300 // 横向き: ノードの最大幅(260px)より広くして重ならないようにする
+const HINT_LIMIT = 5 // 1つのツリーあたりのヒント回数上限
 
 function createInitialNodes(question) {
   return [
@@ -95,6 +97,7 @@ function LogicTreeInner({ question }) {
   const [hintLoadingNodeId, setHintLoadingNodeId] = useState(null)
   const [hint, setHint] = useState(null) // { targetContent, text }
   const [hintOpen, setHintOpen] = useState(false)
+  const [hintCount, setHintCount] = useState(0) // このツリーで使ったヒントの回数
   const [checkingNodeId, setCheckingNodeId] = useState(null)
   const [nodeCheckResult, setNodeCheckResult] = useState(null) // { targetContent, scores, feedback }
   const [nodeCheckOpen, setNodeCheckOpen] = useState(false)
@@ -259,6 +262,10 @@ function LogicTreeInner({ question }) {
 
   const getHint = useCallback(
     async (nodeId) => {
+      if (hintCount >= HINT_LIMIT) {
+        setSnackbar({ severity: 'warning', message: `ヒントはこのツリーで${HINT_LIMIT}回まで使えます` })
+        return
+      }
       setHintLoadingNodeId(nodeId)
       try {
         const path = getPathToNode(nodes, edges, nodeId)
@@ -269,13 +276,14 @@ function LogicTreeInner({ question }) {
         })
         setHint({ targetContent: path[path.length - 1], text: hintText })
         setHintOpen(true)
+        setHintCount((c) => c + 1)
       } catch (err) {
         setSnackbar({ severity: 'error', message: `ヒントの取得に失敗しました: ${err.message}` })
       } finally {
         setHintLoadingNodeId(null)
       }
     },
-    [nodes, edges, question],
+    [nodes, edges, question, hintCount],
   )
 
   const handleCheckNode = useCallback(
@@ -307,6 +315,7 @@ function LogicTreeInner({ question }) {
         deleteNode,
         getHint,
         hintLoadingNodeId,
+        hintRemaining: HINT_LIMIT - hintCount,
         checkNode: handleCheckNode,
         checkingNodeId,
         orientation,
@@ -338,7 +347,8 @@ function LogicTreeInner({ question }) {
               </Alert>
             </Panel>
           )}
-          <Panel position="top-right" style={{ display: 'flex', gap: 8 }}>
+          <Panel position="top-right" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <TimerControl />
             <Button
               variant="outlined"
               startIcon={orientation === 'vertical' ? <SwapHorizIcon /> : <SwapVertIcon />}

@@ -5,7 +5,7 @@ import { truncate } from '../_shared/truncate.ts'
 
 const anthropic = new Anthropic({ apiKey: Deno.env.get('ANTHROPIC_API_KEY') })
 
-const COMMENT_MAX_LENGTH = 200
+const FEEDBACK_TOTAL_MAX_LENGTH = 500 // 良かった点+改善点+深掘り理由の合計文字数の上限
 
 interface TreeNode {
   id: string
@@ -54,8 +54,8 @@ const SYSTEM_PROMPT = `あなたはロジックツリー作成トレーニング
 重要なルール:
 - ユーザーの代わりに答えを完成させないでください。改善点や深掘りすべき点を指摘するときは、
   具体的な答えそのものを書かず、「どの観点で」「なぜ」考え直すとよいかだけを示してください。
-- feedbackは、良かった点・改善点・もう一段深掘りすべき点があればそれも踏まえて、
-  箇条書きにせず自然な文章で1つにまとめてください。必ず200文字以内にしてください。
+- goodPoints・improvements・deepenNodesのreasonを全部合わせた文字数が、
+  500文字以内になるようにしてください。
 - 出力は、説明文を付けず、次のJSON形式のみを返してください。
 
 {
@@ -69,7 +69,9 @@ const SYSTEM_PROMPT = `あなたはロジックツリー作成トレーニング
     "expression": 0から100の整数
   },
   "total": 0から100の整数(7項目を踏まえた総合点),
-  "feedback": "総合コメント(200文字以内、1つの文章)"
+  "goodPoints": ["良かった点を1〜3個、文章で"],
+  "improvements": ["改善した方がよい点を1〜3個、文章で"],
+  "deepenNodes": [{"content": "対象ノードの文章", "reason": "なぜもう一段深掘りすべきか"}]
 }`
 
 Deno.serve(async (req) => {
@@ -102,8 +104,28 @@ ${buildTreeText(nodes) || '(ノードがありません)'}`
     const textBlock = response.content.find((block) => block.type === 'text')
     const evaluation = parseJsonBlock(textBlock!.text)
 
-    // AIが文字数制限を守らなかった場合の保険として、念のため切り詰める
-    evaluation.feedback = truncate(evaluation.feedback ?? '', COMMENT_MAX_LENGTH)
+    // AIが文字数制限を守らなかった場合の保険として、合計500文字に収まるよう
+    // goodPoints -> improvements -> deepenNodesの順に、残り文字数ぶんだけ使う
+    let remaining = FEEDBACK_TOTAL_MAX_LENGTH
+    const takeWithinBudget = (text: string) => {
+      if (remaining <= 0) return ''
+      const piece = truncate(text, remaining)
+      remaining -= piece.length
+      return piece
+    }
+
+    evaluation.goodPoints = (evaluation.goodPoints ?? [])
+      .map(takeWithinBudget)
+      .filter((t: string) => t.length > 0)
+    evaluation.improvements = (evaluation.improvements ?? [])
+      .map(takeWithinBudget)
+      .filter((t: string) => t.length > 0)
+    evaluation.deepenNodes = (evaluation.deepenNodes ?? [])
+      .map((n: { content: string; reason: string }) => ({
+        ...n,
+        reason: takeWithinBudget(n.reason ?? ''),
+      }))
+      .filter((n: { reason: string }) => n.reason.length > 0)
 
     return new Response(JSON.stringify(evaluation), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

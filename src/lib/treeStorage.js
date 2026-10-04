@@ -63,7 +63,9 @@ export async function upsertTree({
       tree_id: currentTreeId,
       scores: evaluation.scores,
       total: evaluation.total,
-      feedback: evaluation.feedback,
+      good_points: evaluation.goodPoints,
+      improvements: evaluation.improvements,
+      deepen_nodes: evaluation.deepenNodes,
     })
     if (evalError) throw evalError
   }

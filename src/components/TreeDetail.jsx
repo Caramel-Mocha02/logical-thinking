@@ -87,12 +87,7 @@ function TreeDetail({ tree }) {
             <Typography variant="subtitle1" sx={{ mb: 1 }}>
               評価結果（総合点: {evaluation.total}点）
             </Typography>
-            {evaluation.feedback ? (
-              <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap' }}>
-                {evaluation.feedback}
-              </Typography>
-            ) : (
-              // 古い形式(箇条書き)で保存された評価との後方互換
+            {evaluation.good_points || evaluation.improvements ? (
               <>
                 <Typography variant="subtitle2" sx={{ mt: 1 }}>
                   良かった点
@@ -115,6 +110,11 @@ function TreeDetail({ tree }) {
                   ))}
                 </ul>
               </>
+            ) : (
+              // 一時期だけ使っていた、1文にまとめた形式(feedback)で保存された評価との後方互換
+              <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap' }}>
+                {evaluation.feedback}
+              </Typography>
             )}
           </>
         ) : (

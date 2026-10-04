@@ -404,9 +404,17 @@ function LogicTreeInner({ question, timerMinutes }) {
           <Controls showInteractive={false} />
           {locked ? (
             <Panel position="top-left">
-              <Alert severity="error" sx={{ maxWidth: 360 }}>
+              <Alert
+                severity="error"
+                sx={{ maxWidth: 400 }}
+                action={
+                  <Button color="inherit" size="small" onClick={() => setLocked(false)}>
+                    続ける
+                  </Button>
+                }
+              >
                 時間切れのため、ツリーはロックされています。編集・追加・削除・ヒントは使えませんが、
-                「評価する」やノードの「✓チェック」は引き続き使えます。
+                「評価する」やノードの「✓チェック」は引き続き使えます。「続ける」を押すとロックを解除できます。
               </Alert>
             </Panel>
           ) : (

@@ -114,6 +114,7 @@ function LogicTreeInner({ question, timerMinutes }) {
   const [nodeCheckOpen, setNodeCheckOpen] = useState(false)
   const [orientation, setOrientation] = useState('vertical') // 'vertical' または 'horizontal'
   const [elapsedSeconds, setElapsedSeconds] = useState(0)
+  const [locked, setLocked] = useState(false) // タイムアタックの時間切れでロック中かどうか
   const reactFlowInstanceRef = useRef(null)
   const updateNodeInternals = useUpdateNodeInternals()
 
@@ -378,6 +379,7 @@ function LogicTreeInner({ question, timerMinutes }) {
         checkNode: handleCheckNode,
         checkingNodeId,
         orientation,
+        locked,
       }}
     >
       <div style={{ width: '100%', height: '100%' }}>
@@ -389,7 +391,9 @@ function LogicTreeInner({ question, timerMinutes }) {
           onEdgesChange={onEdgesChange}
           onConnect={onConnect}
           onReconnect={onReconnect}
-          edgesReconnectable
+          nodesDraggable={!locked}
+          nodesConnectable={!locked}
+          edgesReconnectable={!locked}
           defaultEdgeOptions={{ type: 'straight' }}
           fitView
           onInit={(instance) => {
@@ -398,13 +402,22 @@ function LogicTreeInner({ question, timerMinutes }) {
         >
           <Background />
           <Controls showInteractive={false} />
-          {nodes.length === 1 && (
+          {locked ? (
             <Panel position="top-left">
-              <Alert severity="info" sx={{ maxWidth: 360 }}>
-                ルートノードをクリックして考えを入力し、右下の＋ボタンで下の階層に分解していきましょう。
-                💡はヒント、✓はそのノードだけのチェックです。ある程度できたら「評価する」でツリー全体を確認できます。
+              <Alert severity="error" sx={{ maxWidth: 360 }}>
+                時間切れのため、ツリーはロックされています。編集・追加・削除・ヒントは使えませんが、
+                「評価する」やノードの「✓チェック」は引き続き使えます。
               </Alert>
             </Panel>
+          ) : (
+            nodes.length === 1 && (
+              <Panel position="top-left">
+                <Alert severity="info" sx={{ maxWidth: 360 }}>
+                  ルートノードをクリックして考えを入力し、右下の＋ボタンで下の階層に分解していきましょう。
+                  💡はヒント、✓はそのノードだけのチェックです。ある程度できたら「評価する」でツリー全体を確認できます。
+                </Alert>
+              </Panel>
+            )
           )}
           <Panel position="top-right" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <Chip
@@ -412,7 +425,7 @@ function LogicTreeInner({ question, timerMinutes }) {
               label={`経過 ${formatSeconds(elapsedSeconds)}`}
               variant="outlined"
             />
-            <TimerControl initialMinutes={timerMinutes} />
+            <TimerControl initialMinutes={timerMinutes} onLockChange={setLocked} />
             <Button
               variant="outlined"
               startIcon={orientation === 'vertical' ? <SwapHorizIcon /> : <SwapVertIcon />}

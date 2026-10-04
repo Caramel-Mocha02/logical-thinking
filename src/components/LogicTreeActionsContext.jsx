@@ -11,6 +11,7 @@ const LogicTreeActionsContext = createContext({
   checkNode: () => {},
   checkingNodeId: null,
   orientation: 'vertical',
+  locked: false,
 })
 
 export default LogicTreeActionsContext

@@ -23,6 +23,7 @@ function LogicTreeNode({ data }) {
     checkNode,
     checkingNodeId,
     orientation,
+    locked,
   } = useContext(LogicTreeActionsContext)
   const targetPosition = orientation === 'vertical' ? Position.Top : Position.Left
   const sourcePosition = orientation === 'vertical' ? Position.Bottom : Position.Right
@@ -31,6 +32,7 @@ function LogicTreeNode({ data }) {
   const [draftContent, setDraftContent] = useState(data.content ?? '')
 
   const startEditing = () => {
+    if (locked) return
     setDraftTitle(data.title ?? '')
     setDraftContent(data.content ?? '')
     setEditing(true)
@@ -110,7 +112,11 @@ function LogicTreeNode({ data }) {
           </Stack>
         )
       ) : (
-        <Box className="nodrag" onClick={startEditing} sx={{ minHeight: 40, cursor: 'text' }}>
+        <Box
+          className="nodrag"
+          onClick={startEditing}
+          sx={{ minHeight: 40, cursor: locked ? 'default' : 'text' }}
+        >
           {data.isRoot ? (
             <Typography
               variant="body2"
@@ -154,7 +160,7 @@ function LogicTreeNode({ data }) {
           className="nodrag"
           size="small"
           onClick={() => getHint(nodeId)}
-          disabled={hintLoadingNodeId !== null || hintRemaining <= 0}
+          disabled={locked || hintLoadingNodeId !== null || hintRemaining <= 0}
           title={`ヒントをもらう（残り${hintRemaining}回）`}
         >
           {hintLoadingNodeId === nodeId ? (
@@ -167,6 +173,7 @@ function LogicTreeNode({ data }) {
           className="nodrag"
           size="small"
           onClick={() => addChild(nodeId)}
+          disabled={locked}
           title="子ノードを追加"
         >
           <AddIcon fontSize="small" />
@@ -191,6 +198,7 @@ function LogicTreeNode({ data }) {
             className="nodrag"
             size="small"
             onClick={() => deleteNode(nodeId)}
+            disabled={locked}
             title="このノードを削除"
           >
             <DeleteIcon fontSize="small" />

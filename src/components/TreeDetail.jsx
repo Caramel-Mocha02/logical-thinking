@@ -87,26 +87,35 @@ function TreeDetail({ tree }) {
             <Typography variant="subtitle1" sx={{ mb: 1 }}>
               評価結果（総合点: {evaluation.total}点）
             </Typography>
-            <Typography variant="subtitle2" sx={{ mt: 1 }}>
-              良かった点
-            </Typography>
-            <ul style={{ marginTop: 4 }}>
-              {evaluation.good_points.map((text, i) => (
-                <li key={i}>
-                  <Typography variant="body2">{text}</Typography>
-                </li>
-              ))}
-            </ul>
-            <Typography variant="subtitle2" sx={{ mt: 1 }}>
-              改善した方がよい点
-            </Typography>
-            <ul style={{ marginTop: 4 }}>
-              {evaluation.improvements.map((text, i) => (
-                <li key={i}>
-                  <Typography variant="body2">{text}</Typography>
-                </li>
-              ))}
-            </ul>
+            {evaluation.feedback ? (
+              <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap' }}>
+                {evaluation.feedback}
+              </Typography>
+            ) : (
+              // 古い形式(箇条書き)で保存された評価との後方互換
+              <>
+                <Typography variant="subtitle2" sx={{ mt: 1 }}>
+                  良かった点
+                </Typography>
+                <ul style={{ marginTop: 4 }}>
+                  {(evaluation.good_points ?? []).map((text, i) => (
+                    <li key={i}>
+                      <Typography variant="body2">{text}</Typography>
+                    </li>
+                  ))}
+                </ul>
+                <Typography variant="subtitle2" sx={{ mt: 1 }}>
+                  改善した方がよい点
+                </Typography>
+                <ul style={{ marginTop: 4 }}>
+                  {(evaluation.improvements ?? []).map((text, i) => (
+                    <li key={i}>
+                      <Typography variant="body2">{text}</Typography>
+                    </li>
+                  ))}
+                </ul>
+              </>
+            )}
           </>
         ) : (
           <Typography variant="body2" color="text.secondary">

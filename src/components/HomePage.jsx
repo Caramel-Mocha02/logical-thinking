@@ -3,6 +3,7 @@ import { Box, AppBar, Toolbar, Typography, Button, Stack, TextField } from '@mui
 import AddCircleIcon from '@mui/icons-material/AddCircle'
 import { supabase } from '../supabaseClient.js'
 import HistoryList from './HistoryList.jsx'
+import Logo from './Logo.jsx'
 
 function HomePage({ onStart }) {
   const [timerMinutes, setTimerMinutes] = useState('')
@@ -16,9 +17,7 @@ function HomePage({ onStart }) {
     <Box sx={{ height: '100vh', display: 'flex', flexDirection: 'column' }}>
       <AppBar position="static">
         <Toolbar sx={{ justifyContent: 'space-between' }}>
-          <Typography variant="h6" component="div">
-            ロジックツリートレーニング
-          </Typography>
+          <Logo />
           <Button color="inherit" onClick={() => supabase.auth.signOut()}>
             ログアウト
           </Button>
@@ -36,9 +35,7 @@ function HomePage({ onStart }) {
             py: 4,
           }}
         >
-          <Typography variant="h5" component="h1" sx={{ textAlign: 'center' }}>
-            ロジックツリートレーニング
-          </Typography>
+          <Logo size="large" />
           <Typography
             variant="body2"
             color="text.secondary"

@@ -5,7 +5,7 @@ export async function fetchTreeHistory() {
   const { data, error } = await supabase
     .from('trees')
     .select(
-      'id, question_type, question_text, created_at, duration_seconds, evaluations(total, scores, good_points, improvements, deepen_nodes, created_at)',
+      'id, question_type, question_text, created_at, duration_seconds, evaluations(total, scores, feedback, good_points, improvements, deepen_nodes, created_at)',
     )
     .order('created_at', { ascending: false })
 

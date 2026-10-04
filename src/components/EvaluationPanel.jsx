@@ -7,9 +7,6 @@ import {
   Typography,
   Box,
   LinearProgress,
-  List,
-  ListItem,
-  ListItemText,
   Divider,
 } from '@mui/material'
 import evaluationScoreLabel from '../lib/evaluationScoreLabel.js'
@@ -29,7 +26,7 @@ function ScoreBar({ label, value }) {
 function EvaluationPanel({ open, onClose, evaluation }) {
   if (!evaluation) return null
 
-  const { scores, total, goodPoints, improvements, deepenNodes } = evaluation
+  const { scores, total, feedback } = evaluation
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
@@ -48,42 +45,11 @@ function EvaluationPanel({ open, onClose, evaluation }) {
 
         <Divider sx={{ my: 2 }} />
 
-        <Typography variant="subtitle1" sx={{ mb: 1 }}>
-          良かった点
-        </Typography>
-        <List dense>
-          {goodPoints.map((text, i) => (
-            <ListItem key={i} sx={{ display: 'list-item', pl: 2 }}>
-              <ListItemText primary={text} />
-            </ListItem>
-          ))}
-        </List>
-
-        <Typography variant="subtitle1" sx={{ mt: 2, mb: 1 }}>
-          改善した方がよい点
-        </Typography>
-        <List dense>
-          {improvements.map((text, i) => (
-            <ListItem key={i} sx={{ display: 'list-item', pl: 2 }}>
-              <ListItemText primary={text} />
-            </ListItem>
-          ))}
-        </List>
-
-        {deepenNodes && deepenNodes.length > 0 && (
-          <>
-            <Typography variant="subtitle1" sx={{ mt: 2, mb: 1 }}>
-              もう一段深掘りした方がよいノード
-            </Typography>
-            <List dense>
-              {deepenNodes.map((node, i) => (
-                <ListItem key={i} sx={{ display: 'list-item', pl: 2 }}>
-                  <ListItemText primary={node.content} secondary={node.reason} />
-                </ListItem>
-              ))}
-            </List>
-          </>
-        )}
+        <Box sx={{ bgcolor: 'grey.50', p: 2, borderRadius: 1 }}>
+          <Typography variant="body1" sx={{ whiteSpace: 'pre-wrap' }}>
+            {feedback}
+          </Typography>
+        </Box>
       </DialogContent>
       <DialogActions>
         <Button onClick={onClose}>閉じる</Button>

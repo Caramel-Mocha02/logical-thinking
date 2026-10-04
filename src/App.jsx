@@ -3,6 +3,7 @@ import { AppBar, Toolbar, Typography, Box, Paper, Chip, Button, CircularProgress
 import HomeIcon from '@mui/icons-material/Home'
 import LogicTree from './components/LogicTree.jsx'
 import HomePage from './components/HomePage.jsx'
+import Logo from './components/Logo.jsx'
 import QuestionPicker from './components/QuestionPicker.jsx'
 import { useAuth } from './auth/AuthContext.jsx'
 import LoginPage from './auth/LoginPage.jsx'
@@ -47,9 +48,7 @@ function App() {
     <Box sx={{ height: '100vh', display: 'flex', flexDirection: 'column' }}>
       <AppBar position="static">
         <Toolbar sx={{ justifyContent: 'space-between' }}>
-          <Typography variant="h6" component="div">
-            ロジックツリートレーニング
-          </Typography>
+          <Logo />
           <Box>
             <Button color="inherit" startIcon={<HomeIcon />} onClick={() => setView('home')}>
               ホーム

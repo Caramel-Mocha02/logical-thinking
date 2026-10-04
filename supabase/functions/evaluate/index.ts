@@ -54,7 +54,8 @@ const SYSTEM_PROMPT = `あなたはロジックツリー作成トレーニング
 重要なルール:
 - ユーザーの代わりに答えを完成させないでください。改善点や深掘りすべき点を指摘するときは、
   具体的な答えそのものを書かず、「どの観点で」「なぜ」考え直すとよいかだけを示してください。
-- goodPoints・improvements・deepenNodesのreasonは、それぞれ200文字以内にしてください。
+- feedbackは、良かった点・改善点・もう一段深掘りすべき点があればそれも踏まえて、
+  箇条書きにせず自然な文章で1つにまとめてください。必ず200文字以内にしてください。
 - 出力は、説明文を付けず、次のJSON形式のみを返してください。
 
 {
@@ -68,9 +69,7 @@ const SYSTEM_PROMPT = `あなたはロジックツリー作成トレーニング
     "expression": 0から100の整数
   },
   "total": 0から100の整数(7項目を踏まえた総合点),
-  "goodPoints": ["良かった点を1〜3個、文章で(200文字以内)"],
-  "improvements": ["改善した方がよい点を1〜3個、文章で(200文字以内)"],
-  "deepenNodes": [{"content": "対象ノードの文章", "reason": "なぜもう一段深掘りすべきか(200文字以内)"}]
+  "feedback": "総合コメント(200文字以内、1つの文章)"
 }`
 
 Deno.serve(async (req) => {
@@ -104,18 +103,7 @@ ${buildTreeText(nodes) || '(ノードがありません)'}`
     const evaluation = parseJsonBlock(textBlock!.text)
 
     // AIが文字数制限を守らなかった場合の保険として、念のため切り詰める
-    evaluation.goodPoints = (evaluation.goodPoints ?? []).map((t: string) =>
-      truncate(t, COMMENT_MAX_LENGTH),
-    )
-    evaluation.improvements = (evaluation.improvements ?? []).map((t: string) =>
-      truncate(t, COMMENT_MAX_LENGTH),
-    )
-    evaluation.deepenNodes = (evaluation.deepenNodes ?? []).map(
-      (n: { content: string; reason: string }) => ({
-        ...n,
-        reason: truncate(n.reason, COMMENT_MAX_LENGTH),
-      }),
-    )
+    evaluation.feedback = truncate(evaluation.feedback ?? '', COMMENT_MAX_LENGTH)
 
     return new Response(JSON.stringify(evaluation), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

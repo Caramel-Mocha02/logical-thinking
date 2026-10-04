@@ -1,12 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Chip } from '@mui/material'
 import TimerIcon from '@mui/icons-material/Timer'
-
-function formatTime(seconds) {
-  const m = Math.floor(seconds / 60)
-  const s = seconds % 60
-  return `${m}:${String(s).padStart(2, '0')}`
-}
+import { formatSeconds } from '../lib/formatTime.js'
 
 // initialMinutesが指定されていれば、表示と同時にカウントダウンを始める
 function TimerControl({ initialMinutes }) {
@@ -31,7 +26,7 @@ function TimerControl({ initialMinutes }) {
   return (
     <Chip
       icon={<TimerIcon />}
-      label={timeUp ? '時間切れ' : formatTime(remainingSeconds)}
+      label={timeUp ? '時間切れ' : formatSeconds(remainingSeconds)}
       color={timeUp ? 'error' : 'default'}
       onDelete={() => setRemainingSeconds(null)}
       sx={{ mr: 1 }}

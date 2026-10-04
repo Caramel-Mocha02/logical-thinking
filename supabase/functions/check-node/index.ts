@@ -1,8 +1,11 @@
 import Anthropic from 'npm:@anthropic-ai/sdk'
 import { corsHeaders } from '../_shared/cors.ts'
 import { parseJsonBlock } from '../_shared/parseJsonBlock.ts'
+import { truncate } from '../_shared/truncate.ts'
 
 const anthropic = new Anthropic({ apiKey: Deno.env.get('ANTHROPIC_API_KEY') })
+
+const FEEDBACK_MAX_LENGTH = 200
 
 const CHECK_NODE_SYSTEM_PROMPT = `あなたはロジックツリー作成トレーニングを指導するコーチです。
 ユーザーが指定した1つのノードについて、次の4項目をそれぞれ100点満点で評価してください。
@@ -15,6 +18,7 @@ const CHECK_NODE_SYSTEM_PROMPT = `あなたはロジックツリー作成トレ�
 重要なルール:
 - ユーザーの代わりに答えを完成させないでください。フィードバックでは、
   具体的な答えそのものを書かず、「どの観点で」「なぜ」見直すとよいかだけを示してください。
+- feedbackは200文字以内にしてください。
 - 出力は、説明文を付けず、次のJSON形式のみを返してください。
 
 {
@@ -24,7 +28,7 @@ const CHECK_NODE_SYSTEM_PROMPT = `あなたはロジックツリー作成トレ�
     "causality": 0から100の整数,
     "parentRelation": 0から100の整数
   },
-  "feedback": "2〜4文程度のフィードバック"
+  "feedback": "2〜4文程度のフィードバック(200文字以内)"
 }`
 
 Deno.serve(async (req) => {
@@ -62,6 +66,7 @@ ${path.map((c: string) => c || '(未入力)').join(' → ')}
 
     const textBlock = response.content.find((block) => block.type === 'text')
     const result = parseJsonBlock(textBlock!.text)
+    result.feedback = truncate(result.feedback, FEEDBACK_MAX_LENGTH)
 
     return new Response(JSON.stringify(result), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

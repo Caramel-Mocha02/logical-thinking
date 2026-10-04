@@ -10,11 +10,11 @@ import {
   useUpdateNodeInternals,
 } from '@xyflow/react'
 import '@xyflow/react/dist/style.css'
-import { Button, Snackbar, Alert } from '@mui/material'
-import SaveIcon from '@mui/icons-material/Save'
+import { Button, Chip, Snackbar, Alert, Typography } from '@mui/material'
 import RateReviewIcon from '@mui/icons-material/RateReview'
 import SwapHorizIcon from '@mui/icons-material/SwapHoriz'
 import SwapVertIcon from '@mui/icons-material/SwapVert'
+import HourglassBottomIcon from '@mui/icons-material/HourglassBottom'
 import LogicTreeNode from './LogicTreeNode.jsx'
 import LogicTreeActionsContext from './LogicTreeActionsContext.jsx'
 import EvaluationPanel from './EvaluationPanel.jsx'
@@ -22,10 +22,11 @@ import HintPanel from './HintPanel.jsx'
 import NodeCheckPanel from './NodeCheckPanel.jsx'
 import TimerControl from './TimerControl.jsx'
 import { useAuth } from '../auth/AuthContext.jsx'
-import { saveTree } from '../lib/treeStorage.js'
+import { upsertTree } from '../lib/treeStorage.js'
 import { evaluateTree } from '../lib/evaluateTree.js'
 import { fetchHint } from '../lib/hint.js'
 import { checkNode as checkNodeApi } from '../lib/checkNode.js'
+import { formatSeconds } from '../lib/formatTime.js'
 
 const nodeTypes = { logicNode: LogicTreeNode }
 
@@ -33,6 +34,7 @@ const CHILD_SPACING = 260
 const VERTICAL_DEPTH_OFFSET = 150 // 縦向き: ノードの高さより広ければよい
 const HORIZONTAL_DEPTH_OFFSET = 300 // 横向き: ノードの最大幅(260px)より広くして重ならないようにする
 const HINT_LIMIT = 1 // 1つのツリーあたりのヒント回数上限
+const AUTOSAVE_DELAY_MS = 1500
 
 function createInitialNodes(question) {
   return [
@@ -40,9 +42,18 @@ function createInitialNodes(question) {
       id: 'root',
       type: 'logicNode',
       position: { x: 300, y: 100 },
-      data: { label: question?.text ?? '', isRoot: true },
+      data: { content: question?.text ?? '', title: '', isRoot: true },
     },
   ]
+}
+
+// ノードの表示用テキスト(要素：説明)をAI送信・検索用にまとめる
+function nodeDisplayText(data) {
+  if (data.isRoot) return data.content ?? ''
+  const title = data.title ?? ''
+  const content = data.content ?? ''
+  if (title && content) return `${title}：${content}`
+  return title || content
 }
 
 // targetId が ancestorId の子孫（さらに下の階層）かどうかを調べる。
@@ -63,12 +74,12 @@ function isDescendant(edges, ancestorId, targetId) {
 // ルートから対象ノードまでの経路(文章の配列)を求める
 function getPathToNode(nodes, edges, nodeId) {
   const parentByChild = new Map(edges.map((e) => [e.target, e.source]))
-  const contentById = new Map(nodes.map((n) => [n.id, n.data.label]))
+  const textById = new Map(nodes.map((n) => [n.id, nodeDisplayText(n.data)]))
 
   const path = []
   let current = nodeId
   while (current) {
-    path.unshift(contentById.get(current) ?? '')
+    path.unshift(textById.get(current) ?? '')
     current = parentByChild.get(current)
   }
   return path
@@ -89,7 +100,7 @@ function LogicTreeInner({ question, timerMinutes }) {
   const [nodes, setNodes, onNodesChange] = useNodesState(() => createInitialNodes(question))
   const [edges, setEdges, onEdgesChange] = useEdgesState([])
   const [nextId, setNextId] = useState(1)
-  const [saving, setSaving] = useState(false)
+  const [saveStatus, setSaveStatus] = useState('idle') // 'idle' | 'saving' | 'saved' | 'error'
   const [snackbar, setSnackbar] = useState(null) // { severity, message }
   const [evaluating, setEvaluating] = useState(false)
   const [evaluation, setEvaluation] = useState(null)
@@ -102,8 +113,62 @@ function LogicTreeInner({ question, timerMinutes }) {
   const [nodeCheckResult, setNodeCheckResult] = useState(null) // { targetContent, scores, feedback }
   const [nodeCheckOpen, setNodeCheckOpen] = useState(false)
   const [orientation, setOrientation] = useState('vertical') // 'vertical' または 'horizontal'
+  const [elapsedSeconds, setElapsedSeconds] = useState(0)
   const reactFlowInstanceRef = useRef(null)
   const updateNodeInternals = useUpdateNodeInternals()
+
+  const sessionStartRef = useRef(Date.now())
+  const treeIdRef = useRef(null)
+  const autosaveTimeoutRef = useRef(null)
+  const latestRef = useRef({ nodes, edges, evaluation })
+
+  // 常に最新のnodes/edges/evaluationを参照できるようにしておく(自動保存のタイマーから使うため)
+  useEffect(() => {
+    latestRef.current = { nodes, edges, evaluation }
+  })
+
+  // 1秒ごとに経過時間を更新する
+  useEffect(() => {
+    const intervalId = setInterval(() => {
+      setElapsedSeconds(Math.floor((Date.now() - sessionStartRef.current) / 1000))
+    }, 1000)
+    return () => clearInterval(intervalId)
+  }, [])
+
+  const doAutosave = useCallback(async () => {
+    const { nodes: n, edges: e, evaluation: ev } = latestRef.current
+    const durationSeconds = Math.floor((Date.now() - sessionStartRef.current) / 1000)
+    try {
+      const treeId = await upsertTree({
+        treeId: treeIdRef.current,
+        userId: session.user.id,
+        questionType: question.type,
+        questionText: question.text,
+        nodes: n,
+        edges: e,
+        evaluation: ev,
+        durationSeconds,
+      })
+      treeIdRef.current = treeId
+      setSaveStatus('saved')
+    } catch (err) {
+      setSaveStatus('error')
+      setSnackbar({ severity: 'error', message: `自動保存に失敗しました: ${err.message}` })
+    }
+  }, [session, question])
+
+  // 編集してからしばらく操作がなければ自動保存する(操作のたびに保存し直さないため)
+  const scheduleAutosave = useCallback(() => {
+    setSaveStatus('saving')
+    if (autosaveTimeoutRef.current) clearTimeout(autosaveTimeoutRef.current)
+    autosaveTimeoutRef.current = setTimeout(doAutosave, AUTOSAVE_DELAY_MS)
+  }, [doAutosave])
+
+  useEffect(() => {
+    return () => {
+      if (autosaveTimeoutRef.current) clearTimeout(autosaveTimeoutRef.current)
+    }
+  }, [])
 
   // 向きを切り替えたときに、接続点(Handle)の位置をReact Flowに再計測させる。
   // これをしないと、見た目の点の位置と実際に線がつながる位置がずれてしまう
@@ -120,14 +185,15 @@ function LogicTreeInner({ question, timerMinutes }) {
   }
 
   // ツリーの内容が変わったら、古い評価結果を保存してしまわないよう評価結果を破棄する
-  const updateContent = useCallback(
-    (id, content) => {
+  const updateNode = useCallback(
+    (id, fields) => {
       setNodes((nds) =>
-        nds.map((n) => (n.id === id ? { ...n, data: { ...n.data, label: content } } : n)),
+        nds.map((n) => (n.id === id ? { ...n, data: { ...n.data, ...fields } } : n)),
       )
       setEvaluation(null)
+      scheduleAutosave()
     },
-    [setNodes],
+    [setNodes, scheduleAutosave],
   )
 
   const addChild = useCallback(
@@ -154,15 +220,16 @@ function LogicTreeInner({ question, timerMinutes }) {
         id: newId,
         type: 'logicNode',
         position,
-        data: { label: '' },
+        data: { title: '', content: '' },
       }
 
       setNodes((nds) => [...nds, newNode])
       setEdges((eds) => [...eds, { id: `edge-${parentId}-${newId}`, source: parentId, target: newId }])
       setEvaluation(null)
       fitViewSoon()
+      scheduleAutosave()
     },
-    [nodes, edges, nextId, orientation, setNodes, setEdges],
+    [nodes, edges, nextId, orientation, setNodes, setEdges, scheduleAutosave],
   )
 
   const deleteNode = useCallback(
@@ -183,8 +250,9 @@ function LogicTreeInner({ question, timerMinutes }) {
       setNodes((nds) => nds.filter((n) => !toDelete.has(n.id)))
       setEdges((eds) => eds.filter((e) => !toDelete.has(e.source) && !toDelete.has(e.target)))
       setEvaluation(null)
+      scheduleAutosave()
     },
-    [edges, setNodes, setEdges],
+    [edges, setNodes, setEdges, scheduleAutosave],
   )
 
   // childId の親を newParentId に変更する。ルートに親をつけたり、ループができる
@@ -204,8 +272,9 @@ function LogicTreeInner({ question, timerMinutes }) {
           { id: oldEdgeId ?? `edge-${newParentId}-${childId}`, source: newParentId, target: childId },
         ]
       })
+      scheduleAutosave()
     },
-    [edges, setEdges],
+    [edges, setEdges, scheduleAutosave],
   )
 
   const onConnect = useCallback(
@@ -218,41 +287,24 @@ function LogicTreeInner({ question, timerMinutes }) {
     [setParent],
   )
 
-  const handleSave = async () => {
-    setSaving(true)
-    try {
-      await saveTree({
-        userId: session.user.id,
-        questionType: question.type,
-        questionText: question.text,
-        nodes,
-        edges,
-        evaluation,
-      })
-      setSnackbar({
-        severity: 'success',
-        message: evaluation
-          ? 'ロジックツリーと評価結果を保存しました'
-          : 'ロジックツリーを保存しました',
-      })
-    } catch (err) {
-      setSnackbar({ severity: 'error', message: `保存に失敗しました: ${err.message}` })
-    } finally {
-      setSaving(false)
-    }
-  }
-
   const handleEvaluate = async () => {
     setEvaluating(true)
     try {
+      const parentIdByNodeId = new Map(edges.map((e) => [e.target, e.source]))
+      const treeNodes = nodes.map((n) => ({
+        id: n.id,
+        parentId: parentIdByNodeId.get(n.id) ?? null,
+        title: n.data.title ?? '',
+        content: n.data.content ?? '',
+      }))
       const result = await evaluateTree({
         questionType: question.type,
         questionText: question.text,
-        nodes,
-        edges,
+        nodes: treeNodes,
       })
       setEvaluation(result)
       setEvaluationOpen(true)
+      scheduleAutosave()
     } catch (err) {
       setSnackbar({ severity: 'error', message: `評価に失敗しました: ${err.message}` })
     } finally {
@@ -307,11 +359,18 @@ function LogicTreeInner({ question, timerMinutes }) {
     [nodes, edges, question],
   )
 
+  const saveStatusLabel = {
+    idle: '',
+    saving: '保存中...',
+    saved: '保存済み',
+    error: '保存に失敗しました',
+  }[saveStatus]
+
   return (
     <LogicTreeActionsContext.Provider
       value={{
         addChild,
-        updateContent,
+        updateNode,
         deleteNode,
         getHint,
         hintLoadingNodeId,
@@ -348,6 +407,11 @@ function LogicTreeInner({ question, timerMinutes }) {
             </Panel>
           )}
           <Panel position="top-right" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <Chip
+              icon={<HourglassBottomIcon />}
+              label={`経過 ${formatSeconds(elapsedSeconds)}`}
+              variant="outlined"
+            />
             <TimerControl initialMinutes={timerMinutes} />
             <Button
               variant="outlined"
@@ -366,14 +430,14 @@ function LogicTreeInner({ question, timerMinutes }) {
             >
               {evaluating ? '評価中...' : '評価する'}
             </Button>
-            <Button
-              variant="contained"
-              startIcon={<SaveIcon />}
-              onClick={handleSave}
-              disabled={saving}
-            >
-              {saving ? '保存中...' : '保存'}
-            </Button>
+            {saveStatusLabel && (
+              <Typography
+                variant="body2"
+                color={saveStatus === 'error' ? 'error' : 'text.secondary'}
+              >
+                {saveStatusLabel}
+              </Typography>
+            )}
           </Panel>
         </ReactFlow>
       </div>
@@ -404,4 +468,3 @@ function LogicTreeInner({ question, timerMinutes }) {
 }
 
 export default LogicTree
-

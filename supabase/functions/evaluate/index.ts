@@ -1,13 +1,22 @@
 import Anthropic from 'npm:@anthropic-ai/sdk'
 import { corsHeaders } from '../_shared/cors.ts'
 import { parseJsonBlock } from '../_shared/parseJsonBlock.ts'
+import { truncate } from '../_shared/truncate.ts'
 
 const anthropic = new Anthropic({ apiKey: Deno.env.get('ANTHROPIC_API_KEY') })
+
+const COMMENT_MAX_LENGTH = 200
 
 interface TreeNode {
   id: string
   parentId: string | null
+  title?: string
   content: string
+}
+
+function nodeLabel(node: TreeNode) {
+  const content = node.content || '(未入力)'
+  return node.title ? `${node.title}：${content}` : content
 }
 
 // nodes(親子関係を含むフラットな配列)から、階層をインデントしたテキストに変換する
@@ -22,7 +31,7 @@ function buildTreeText(nodes: TreeNode[]) {
   const lines: string[] = []
   function walk(parentId: string | null, depth: number) {
     for (const node of childrenByParent.get(parentId) ?? []) {
-      lines.push(`${'  '.repeat(depth)}- ${node.content || '(未入力)'}`)
+      lines.push(`${'  '.repeat(depth)}- ${nodeLabel(node)}`)
       walk(node.id, depth + 1)
     }
   }
@@ -32,6 +41,7 @@ function buildTreeText(nodes: TreeNode[]) {
 
 const SYSTEM_PROMPT = `あなたはロジックツリー作成トレーニングを指導するコーチです。
 ユーザーが作成したロジックツリーを、次の7項目についてそれぞれ100点満点で評価してください。
+ツリーの各ノードは「要素：説明」の形で渡されます(ルートは説明のみ)。
 
 - logic(論理性)
 - mece(MECE)
@@ -44,6 +54,7 @@ const SYSTEM_PROMPT = `あなたはロジックツリー作成トレーニング
 重要なルール:
 - ユーザーの代わりに答えを完成させないでください。改善点や深掘りすべき点を指摘するときは、
   具体的な答えそのものを書かず、「どの観点で」「なぜ」考え直すとよいかだけを示してください。
+- goodPoints・improvements・deepenNodesのreasonは、それぞれ200文字以内にしてください。
 - 出力は、説明文を付けず、次のJSON形式のみを返してください。
 
 {
@@ -57,9 +68,9 @@ const SYSTEM_PROMPT = `あなたはロジックツリー作成トレーニング
     "expression": 0から100の整数
   },
   "total": 0から100の整数(7項目を踏まえた総合点),
-  "goodPoints": ["良かった点を1〜3個、文章で"],
-  "improvements": ["改善した方がよい点を1〜3個、文章で"],
-  "deepenNodes": [{"content": "対象ノードの文章", "reason": "なぜもう一段深掘りすべきか"}]
+  "goodPoints": ["良かった点を1〜3個、文章で(200文字以内)"],
+  "improvements": ["改善した方がよい点を1〜3個、文章で(200文字以内)"],
+  "deepenNodes": [{"content": "対象ノードの文章", "reason": "なぜもう一段深掘りすべきか(200文字以内)"}]
 }`
 
 Deno.serve(async (req) => {
@@ -91,6 +102,20 @@ ${buildTreeText(nodes) || '(ノードがありません)'}`
 
     const textBlock = response.content.find((block) => block.type === 'text')
     const evaluation = parseJsonBlock(textBlock!.text)
+
+    // AIが文字数制限を守らなかった場合の保険として、念のため切り詰める
+    evaluation.goodPoints = (evaluation.goodPoints ?? []).map((t: string) =>
+      truncate(t, COMMENT_MAX_LENGTH),
+    )
+    evaluation.improvements = (evaluation.improvements ?? []).map((t: string) =>
+      truncate(t, COMMENT_MAX_LENGTH),
+    )
+    evaluation.deepenNodes = (evaluation.deepenNodes ?? []).map(
+      (n: { content: string; reason: string }) => ({
+        ...n,
+        reason: truncate(n.reason, COMMENT_MAX_LENGTH),
+      }),
+    )
 
     return new Response(JSON.stringify(evaluation), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

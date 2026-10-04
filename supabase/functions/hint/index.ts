@@ -1,11 +1,14 @@
 import Anthropic from 'npm:@anthropic-ai/sdk'
 import { corsHeaders } from '../_shared/cors.ts'
+import { truncate } from '../_shared/truncate.ts'
 
 const anthropic = new Anthropic({ apiKey: Deno.env.get('ANTHROPIC_API_KEY') })
 
+const HINT_MAX_LENGTH = 200
+
 const HINT_SYSTEM_PROMPT = `あなたはロジックツリー作成トレーニングを指導するコーチです。
 ユーザーが今取り組んでいるノードについて、次にどう考えを深めればよいか、
-方向性のヒントだけを2〜3文程度で示してください。
+方向性のヒントだけを2〜3文程度、200文字以内で示してください。
 
 重要なルール:
 - 具体的な答えそのもの(実際の打ち手や分解結果)を書いてはいけません。
@@ -43,8 +46,9 @@ ${path.map((c: string) => c || '(未入力)').join(' → ')}
     })
 
     const textBlock = response.content.find((block) => block.type === 'text')
+    const hint = truncate(textBlock!.text.trim(), HINT_MAX_LENGTH)
 
-    return new Response(JSON.stringify({ hint: textBlock!.text.trim() }), {
+    return new Response(JSON.stringify({ hint }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     })
   } catch (err) {

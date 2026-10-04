@@ -76,19 +76,24 @@ function LogicTreeNode({ data }) {
           onBlur={commit}
         />
       ) : (
-        <Typography
-          className="nodrag"
-          variant="body2"
-          onClick={startEditing}
-          sx={{
-            minHeight: 40,
-            whiteSpace: 'pre-wrap',
-            cursor: 'text',
-            color: data.label ? 'text.primary' : 'text.disabled',
-          }}
-        >
-          {data.label || 'クリックして入力'}
-        </Typography>
+        <>
+          <Typography
+            className="nodrag"
+            variant="body2"
+            onClick={startEditing}
+            sx={{
+              minHeight: 40,
+              whiteSpace: 'pre-wrap',
+              cursor: 'text',
+              color: data.label ? 'text.primary' : 'text.disabled',
+            }}
+          >
+            {data.label || 'クリックして入力'}
+          </Typography>
+          <Typography variant="caption" color="text.disabled">
+            {data.label.length}/{MAX_LENGTH}文字
+          </Typography>
+        </>
       )}
 
       <Stack direction="row" spacing={0.5} sx={{ mt: 1, justifyContent: 'flex-end' }}>

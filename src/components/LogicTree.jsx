@@ -32,7 +32,7 @@ const nodeTypes = { logicNode: LogicTreeNode }
 const CHILD_SPACING = 260
 const VERTICAL_DEPTH_OFFSET = 150 // 縦向き: ノードの高さより広ければよい
 const HORIZONTAL_DEPTH_OFFSET = 300 // 横向き: ノードの最大幅(260px)より広くして重ならないようにする
-const HINT_LIMIT = 5 // 1つのツリーあたりのヒント回数上限
+const HINT_LIMIT = 1 // 1つのツリーあたりのヒント回数上限
 
 function createInitialNodes(question) {
   return [

@@ -18,7 +18,8 @@ import ArrowBackIcon from '@mui/icons-material/ArrowBack'
 import questionTypeLabel from '../lib/questionTypeLabel.js'
 import evaluationScoreLabel from '../lib/evaluationScoreLabel.js'
 import { fetchTreeHistory, fetchTreeNodes } from '../lib/history.js'
-import { computeEvaluationStats } from '../lib/evaluationStats.js'
+import { computeEvaluationStats, computeMonthlySkillTrend } from '../lib/evaluationStats.js'
+import SkillGraph from './SkillGraph.jsx'
 
 function buildReadOnlyTree(nodeRows) {
   const nodes = nodeRows.map((row) => ({
@@ -204,6 +205,7 @@ function HistoryPage({ onBack }) {
             {trees && trees.length > 0 && (
               <>
                 <StatsSummary trees={trees} />
+                <SkillGraph data={computeMonthlySkillTrend(trees)} />
                 <List disablePadding>
                   {trees.map((tree) => (
                     <TreeListItem key={tree.id} tree={tree} onClick={() => setSelectedTree(tree)} />

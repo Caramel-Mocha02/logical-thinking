@@ -4,7 +4,9 @@ import { supabase } from '../supabaseClient.js'
 export async function fetchTreeHistory() {
   const { data, error } = await supabase
     .from('trees')
-    .select('id, question_type, question_text, created_at, evaluations(total, scores, good_points, improvements, deepen_nodes)')
+    .select(
+      'id, question_type, question_text, created_at, evaluations(total, scores, good_points, improvements, deepen_nodes, created_at)',
+    )
     .order('created_at', { ascending: false })
 
   if (error) throw error

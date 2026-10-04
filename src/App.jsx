@@ -18,8 +18,10 @@ function App() {
   const [questionLoading, setQuestionLoading] = useState(false)
   const [view, setView] = useState('home') // 'home' | 'tree' | 'history'
   const [pickerOpen, setPickerOpen] = useState(false)
+  const [timerMinutes, setTimerMinutes] = useState(null)
 
-  const startNewTree = () => {
+  const startNewTree = (minutes) => {
+    setTimerMinutes(minutes)
     setQuestionLoading(true)
     fetchRandomQuestion()
       .then(setQuestion)
@@ -87,7 +89,9 @@ function App() {
       </Paper>
 
       <Box sx={{ flex: 1 }}>
-        {question && <LogicTree key={question.id} question={question} />}
+        {question && (
+          <LogicTree key={question.id} question={question} timerMinutes={timerMinutes} />
+        )}
       </Box>
 
       <QuestionPicker

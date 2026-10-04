@@ -1,9 +1,17 @@
-import { Box, AppBar, Toolbar, Typography, Button, Stack } from '@mui/material'
+import { useState } from 'react'
+import { Box, AppBar, Toolbar, Typography, Button, Stack, TextField } from '@mui/material'
 import AddCircleIcon from '@mui/icons-material/AddCircle'
 import HistoryIcon from '@mui/icons-material/History'
 import { supabase } from '../supabaseClient.js'
 
 function HomePage({ onStart, onHistory }) {
+  const [timerMinutes, setTimerMinutes] = useState('')
+
+  const handleStart = () => {
+    const minutes = Number(timerMinutes)
+    onStart(minutes > 0 ? minutes : null)
+  }
+
   return (
     <Box sx={{ height: '100vh', display: 'flex', flexDirection: 'column' }}>
       <AppBar position="static">
@@ -41,7 +49,16 @@ function HomePage({ onStart, onHistory }) {
         </Typography>
 
         <Stack direction="column" spacing={2} sx={{ width: 280 }}>
-          <Button variant="contained" size="large" startIcon={<AddCircleIcon />} onClick={onStart}>
+          <TextField
+            label="制限時間（分・任意）"
+            type="number"
+            size="small"
+            value={timerMinutes}
+            onChange={(e) => setTimerMinutes(e.target.value)}
+            helperText="タイムアタックしたい場合だけ入力してください"
+            slotProps={{ htmlInput: { min: 1, max: 180 } }}
+          />
+          <Button variant="contained" size="large" startIcon={<AddCircleIcon />} onClick={handleStart}>
             新しいツリーを作る
           </Button>
           <Button variant="outlined" size="large" startIcon={<HistoryIcon />} onClick={onHistory}>

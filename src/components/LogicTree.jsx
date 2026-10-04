@@ -74,17 +74,17 @@ function getPathToNode(nodes, edges, nodeId) {
   return path
 }
 
-function LogicTree({ question }) {
+function LogicTree({ question, timerMinutes }) {
   return (
     <ReactFlowProvider>
-      <LogicTreeInner question={question} />
+      <LogicTreeInner question={question} timerMinutes={timerMinutes} />
     </ReactFlowProvider>
   )
 }
 
 // useUpdateNodeInternalsなどのReact FlowのフックはReactFlowProviderの内側でしか
 // 使えないため、実際の処理はこの内側コンポーネントで行う
-function LogicTreeInner({ question }) {
+function LogicTreeInner({ question, timerMinutes }) {
   const { session } = useAuth()
   const [nodes, setNodes, onNodesChange] = useNodesState(() => createInitialNodes(question))
   const [edges, setEdges, onEdgesChange] = useEdgesState([])
@@ -348,7 +348,7 @@ function LogicTreeInner({ question }) {
             </Panel>
           )}
           <Panel position="top-right" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <TimerControl />
+            <TimerControl initialMinutes={timerMinutes} />
             <Button
               variant="outlined"
               startIcon={orientation === 'vertical' ? <SwapHorizIcon /> : <SwapVertIcon />}

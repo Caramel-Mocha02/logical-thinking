@@ -90,9 +90,11 @@ function LogicTreeNode({ data }) {
           >
             {data.label || 'クリックして入力'}
           </Typography>
-          <Typography variant="caption" color="text.disabled">
-            {data.label.length}/{MAX_LENGTH}文字
-          </Typography>
+          {!data.isRoot && (
+            <Typography variant="caption" color="text.disabled">
+              {data.label.length}/{MAX_LENGTH}文字
+            </Typography>
+          )}
         </>
       )}
 

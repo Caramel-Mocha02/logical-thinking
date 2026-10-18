@@ -1,10 +1,10 @@
 import { Box, Typography } from '@mui/material'
 
 // ロジックツリー（1つの考えが枝分かれしていく様子）をモチーフにしたロゴ
-function Logo({ size = 'compact' }) {
+function Logo({ size = 'compact', color = 'inherit' }) {
   const iconSize = size === 'large' ? 48 : 30
   return (
-    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.2, color: 'inherit' }}>
+    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.2, color }}>
       <svg width={iconSize} height={iconSize} viewBox="0 0 30 30" fill="none" aria-hidden="true">
         <path
           d="M15 9 V15 M15 15 L6 20.5 M15 15 L24 20.5"

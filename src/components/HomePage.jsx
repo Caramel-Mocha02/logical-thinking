@@ -1,6 +1,7 @@
 import { useState } from 'react'
-import { Box, AppBar, Toolbar, Typography, Button, Stack, TextField } from '@mui/material'
+import { Box, AppBar, Toolbar, Typography, Button, Stack, TextField, Paper } from '@mui/material'
 import AddCircleIcon from '@mui/icons-material/AddCircle'
+import HistoryIcon from '@mui/icons-material/History'
 import { supabase } from '../supabaseClient.js'
 import HistoryList from './HistoryList.jsx'
 import Logo from './Logo.jsx'
@@ -27,50 +28,72 @@ function HomePage({ onStart, onResume }) {
       <Box sx={{ flex: 1, overflow: 'auto' }}>
         <Box
           sx={{
+            maxWidth: 640,
+            mx: 'auto',
+            px: 2,
+            py: { xs: 3, sm: 5 },
             display: 'flex',
             flexDirection: 'column',
-            alignItems: 'center',
-            gap: 2,
-            px: 2,
-            py: 4,
+            gap: 3,
           }}
         >
-          <Logo size="large" />
-          <Typography
-            variant="body2"
-            color="text.secondary"
-            sx={{ textAlign: 'center', maxWidth: 480 }}
+          <Paper
+            elevation={0}
+            sx={{
+              p: { xs: 3, sm: 5 },
+              borderRadius: 4,
+              boxShadow: '0 16px 40px rgba(91, 110, 225, 0.16)',
+            }}
           >
-            1つのお題について、自分でロジックツリーを作りながら
-            論理的思考・構造化思考を鍛えるトレーニングアプリです。
-          </Typography>
+            <Stack spacing={2} sx={{ alignItems: 'center' }}>
+              <Logo size="large" color="primary.main" />
+              <Typography
+                variant="body2"
+                color="text.secondary"
+                sx={{ textAlign: 'center', maxWidth: 440 }}
+              >
+                1つのお題について、自分でロジックツリーを作りながら
+                論理的思考・構造化思考を鍛えるトレーニングアプリです。
+              </Typography>
 
-          <Stack direction="column" spacing={2} sx={{ width: 280 }}>
-            <TextField
-              label="制限時間（分・任意）"
-              type="number"
-              size="small"
-              value={timerMinutes}
-              onChange={(e) => setTimerMinutes(e.target.value)}
-              helperText="タイムアタックしたい場合だけ入力してください"
-              slotProps={{ htmlInput: { min: 1, max: 180 } }}
-            />
-            <Button
-              variant="contained"
-              size="large"
-              startIcon={<AddCircleIcon />}
-              onClick={handleStart}
-            >
-              新しいツリーを作る
-            </Button>
-          </Stack>
-        </Box>
+              <Stack direction="column" spacing={2} sx={{ width: 280, pt: 1 }}>
+                <TextField
+                  label="制限時間（分・任意）"
+                  type="number"
+                  size="small"
+                  value={timerMinutes}
+                  onChange={(e) => setTimerMinutes(e.target.value)}
+                  helperText="タイムアタックしたい場合だけ入力してください"
+                  slotProps={{ htmlInput: { min: 1, max: 180 } }}
+                />
+                <Button
+                  variant="contained"
+                  size="large"
+                  startIcon={<AddCircleIcon />}
+                  onClick={handleStart}
+                >
+                  新しいツリーを作る
+                </Button>
+              </Stack>
+            </Stack>
+          </Paper>
 
-        <Box sx={{ borderTop: 1, borderColor: 'divider' }}>
-          <Typography variant="subtitle1" sx={{ px: 2, pt: 2 }}>
-            これまでの履歴
-          </Typography>
-          <HistoryList onResume={onResume} />
+          <Paper
+            elevation={0}
+            sx={{
+              borderRadius: 4,
+              overflow: 'hidden',
+              boxShadow: '0 16px 40px rgba(91, 110, 225, 0.12)',
+            }}
+          >
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, px: 3, pt: 2.5, pb: 1 }}>
+              <HistoryIcon color="primary" fontSize="small" />
+              <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
+                これまでの履歴
+              </Typography>
+            </Box>
+            <HistoryList onResume={onResume} />
+          </Paper>
         </Box>
       </Box>
     </Box>

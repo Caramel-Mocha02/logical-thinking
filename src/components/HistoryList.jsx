@@ -11,6 +11,7 @@ import {
   CircularProgress,
   Alert,
 } from '@mui/material'
+import { alpha } from '@mui/material/styles'
 import evaluationScoreLabel from '../lib/evaluationScoreLabel.js'
 import { fetchTreeHistory } from '../lib/history.js'
 import { computeEvaluationStats, computeMonthlySkillTrend } from '../lib/evaluationStats.js'
@@ -23,8 +24,18 @@ function StatsSummary({ trees }) {
   if (!stats) return null
 
   return (
-    <Box sx={{ p: 2, bgcolor: 'grey.50', borderBottom: 1, borderColor: 'divider' }}>
-      <Typography variant="subtitle1">
+    <Box
+      sx={{
+        mx: 2,
+        mb: 2,
+        p: 2,
+        borderRadius: 2,
+        bgcolor: (theme) => alpha(theme.palette.primary.main, 0.08),
+        borderLeft: 4,
+        borderColor: 'primary.main',
+      }}
+    >
+      <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
         平均点: {stats.averageTotal}点（評価済み{stats.count}件から算出）
       </Typography>
       <Typography variant="body2" color="text.secondary">
@@ -35,28 +46,14 @@ function StatsSummary({ trees }) {
   )
 }
 
+// ListItemButton(クリックでツリー詳細)と「続きから始める」ボタンは、どちらも
+// <button>要素になるため、ボタンの中にボタンを入れない(無効なHTML)ように
+// 兄弟要素として並べている
 function TreeListItem({ tree, onClick, onResume }) {
   const evaluation = tree.evaluations?.[0]
   return (
-    <ListItem
-      divider
-      disablePadding
-      secondaryAction={
-        !evaluation && (
-          <Button
-            size="small"
-            sx={{ mr: 1 }}
-            onClick={(e) => {
-              e.stopPropagation()
-              onResume(tree)
-            }}
-          >
-            続きから始める
-          </Button>
-        )
-      }
-    >
-      <ListItemButton onClick={onClick} sx={{ pr: !evaluation ? 16 : 2 }}>
+    <ListItem disablePadding divider sx={{ display: 'flex', alignItems: 'center', gap: 1, pr: 2 }}>
+      <ListItemButton onClick={onClick} sx={{ minWidth: 0, flex: 1 }}>
         <ListItemText
           primary={tree.question_text}
           secondary={
@@ -70,6 +67,11 @@ function TreeListItem({ tree, onClick, onResume }) {
           size="small"
         />
       </ListItemButton>
+      {!evaluation && (
+        <Button size="small" onClick={() => onResume(tree)}>
+          続きから始める
+        </Button>
+      )}
     </ListItem>
   )
 }

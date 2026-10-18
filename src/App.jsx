@@ -100,7 +100,9 @@ function App() {
         )}
       </Paper>
 
-      <Box sx={{ flex: 1 }}>
+      {/* 全体のグラデーション背景とReact Flow自体のドット格子が重なって見づらくならないよう、
+          ツリー編集画面だけは単色の背景にする */}
+      <Box sx={{ flex: 1, bgcolor: '#F7F8FC' }}>
         {question && (
           <LogicTree
             key={question.id}

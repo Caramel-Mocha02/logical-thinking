@@ -5,7 +5,7 @@ import { supabase } from '../supabaseClient.js'
 import HistoryList from './HistoryList.jsx'
 import Logo from './Logo.jsx'
 
-function HomePage({ onStart }) {
+function HomePage({ onStart, onResume }) {
   const [timerMinutes, setTimerMinutes] = useState('')
 
   const handleStart = () => {
@@ -70,7 +70,7 @@ function HomePage({ onStart }) {
           <Typography variant="subtitle1" sx={{ px: 2, pt: 2 }}>
             これまでの履歴
           </Typography>
-          <HistoryList />
+          <HistoryList onResume={onResume} />
         </Box>
       </Box>
     </Box>

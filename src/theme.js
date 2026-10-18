@@ -19,6 +19,24 @@ const theme = createTheme({
     },
   },
   components: {
+    // ロジカルシンキングを感じさせる、ドット格子＋淡いグラデーションの背景
+    MuiCssBaseline: {
+      styleOverrides: {
+        body: {
+          minHeight: '100vh',
+          backgroundColor: '#F3F5FF',
+          backgroundImage: [
+            'radial-gradient(rgba(91, 110, 225, 0.25) 1.5px, transparent 1.5px)',
+            'radial-gradient(circle at 10% 10%, rgba(91, 110, 225, 0.26), transparent 42%)',
+            'radial-gradient(circle at 90% 6%, rgba(170, 100, 255, 0.24), transparent 42%)',
+            'radial-gradient(circle at 88% 95%, rgba(80, 210, 220, 0.22), transparent 48%)',
+            'radial-gradient(circle at 6% 92%, rgba(255, 140, 170, 0.16), transparent 42%)',
+          ].join(', '),
+          backgroundSize: '26px 26px, auto, auto, auto, auto',
+          backgroundAttachment: 'fixed',
+        },
+      },
+    },
     MuiAppBar: {
       styleOverrides: {
         root: {

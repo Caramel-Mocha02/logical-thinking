@@ -36,7 +36,6 @@ function LoginPage() {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        bgcolor: 'grey.50',
       }}
     >
       <Paper sx={{ p: 4, width: 360 }}>

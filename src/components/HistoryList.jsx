@@ -1,5 +1,16 @@
 import { useEffect, useState } from 'react'
-import { Box, Typography, List, ListItemButton, ListItemText, Chip, CircularProgress, Alert } from '@mui/material'
+import {
+  Box,
+  Typography,
+  List,
+  ListItem,
+  ListItemButton,
+  ListItemText,
+  Chip,
+  Button,
+  CircularProgress,
+  Alert,
+} from '@mui/material'
 import evaluationScoreLabel from '../lib/evaluationScoreLabel.js'
 import { fetchTreeHistory } from '../lib/history.js'
 import { computeEvaluationStats, computeMonthlySkillTrend } from '../lib/evaluationStats.js'
@@ -24,29 +35,48 @@ function StatsSummary({ trees }) {
   )
 }
 
-function TreeListItem({ tree, onClick }) {
+function TreeListItem({ tree, onClick, onResume }) {
   const evaluation = tree.evaluations?.[0]
   return (
-    <ListItemButton onClick={onClick} divider>
-      <ListItemText
-        primary={tree.question_text}
-        secondary={
-          new Date(tree.created_at).toLocaleString('ja-JP') +
-          (tree.duration_seconds != null ? ` ・ 所要時間 ${formatSeconds(tree.duration_seconds)}` : '')
-        }
-      />
-      <Chip
-        label={evaluation ? `${evaluation.total}点` : '未評価'}
-        color={evaluation ? 'primary' : 'default'}
-        size="small"
-      />
-    </ListItemButton>
+    <ListItem
+      divider
+      disablePadding
+      secondaryAction={
+        !evaluation && (
+          <Button
+            size="small"
+            sx={{ mr: 1 }}
+            onClick={(e) => {
+              e.stopPropagation()
+              onResume(tree)
+            }}
+          >
+            続きから始める
+          </Button>
+        )
+      }
+    >
+      <ListItemButton onClick={onClick} sx={{ pr: !evaluation ? 16 : 2 }}>
+        <ListItemText
+          primary={tree.question_text}
+          secondary={
+            new Date(tree.created_at).toLocaleString('ja-JP') +
+            (tree.duration_seconds != null ? ` ・ 所要時間 ${formatSeconds(tree.duration_seconds)}` : '')
+          }
+        />
+        <Chip
+          label={evaluation ? `${evaluation.total}点` : '未評価'}
+          color={evaluation ? 'primary' : 'default'}
+          size="small"
+        />
+      </ListItemButton>
+    </ListItem>
   )
 }
 
 // スタート画面に埋め込む履歴一覧(統計・月別グラフ・リスト)。
 // クリックするとその場でツリーの詳細を表示する
-function HistoryList() {
+function HistoryList({ onResume }) {
   const [trees, setTrees] = useState(null)
   const [error, setError] = useState('')
   const [selectedTree, setSelectedTree] = useState(null)
@@ -87,7 +117,12 @@ function HistoryList() {
           <SkillGraph data={computeMonthlySkillTrend(trees)} />
           <List disablePadding>
             {trees.map((tree) => (
-              <TreeListItem key={tree.id} tree={tree} onClick={() => setSelectedTree(tree)} />
+              <TreeListItem
+                key={tree.id}
+                tree={tree}
+                onClick={() => setSelectedTree(tree)}
+                onResume={onResume}
+              />
             ))}
           </List>
         </>

@@ -1,5 +1,29 @@
 import { supabase } from '../supabaseClient.js'
 
+// 保存されていたノード一覧(nodeRows)から、編集を再開できる形のnodes/edgesを組み立てる
+export function buildEditableTree(nodeRows) {
+  const nodes = nodeRows.map((row) => ({
+    id: row.node_key,
+    type: 'logicNode',
+    position: { x: row.position_x, y: row.position_y },
+    data: {
+      title: row.title ?? '',
+      content: row.content ?? '',
+      isRoot: !row.parent_key,
+    },
+  }))
+
+  const edges = nodeRows
+    .filter((row) => row.parent_key)
+    .map((row) => ({
+      id: `edge-${row.parent_key}-${row.node_key}`,
+      source: row.parent_key,
+      target: row.node_key,
+    }))
+
+  return { nodes, edges }
+}
+
 // ロジックツリーを自動保存する。treeIdが無ければ新規作成し、あれば中身を
 // 作り直す(ノード・評価を一旦削除してから最新の内容を入れ直す、シンプルな実装)。
 // 戻り値のtreeIdを次回以降の呼び出しに渡すことで、同じツリーとして更新し続けられる

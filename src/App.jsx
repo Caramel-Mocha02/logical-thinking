@@ -9,6 +9,8 @@ import { useAuth } from './auth/AuthContext.jsx'
 import LoginPage from './auth/LoginPage.jsx'
 import { supabase } from './supabaseClient.js'
 import { fetchRandomQuestion } from './lib/questions.js'
+import { fetchTreeNodes } from './lib/history.js'
+import { buildEditableTree } from './lib/treeStorage.js'
 import questionTypeLabel from './lib/questionTypeLabel.js'
 
 function App() {
@@ -18,14 +20,34 @@ function App() {
   const [view, setView] = useState('home') // 'home' | 'tree'
   const [pickerOpen, setPickerOpen] = useState(false)
   const [timerMinutes, setTimerMinutes] = useState(null)
+  const [resumeData, setResumeData] = useState(null) // 再開するツリーがあれば{treeId, nodes, edges, elapsedSeconds}
 
   const startNewTree = (minutes) => {
+    setResumeData(null)
     setTimerMinutes(minutes)
     setQuestionLoading(true)
     fetchRandomQuestion()
       .then(setQuestion)
       .finally(() => setQuestionLoading(false))
     setView('tree')
+  }
+
+  // 未評価のまま保存されていたツリーを、続きから編集できる状態で開く
+  const resumeTree = async (tree) => {
+    setTimerMinutes(null)
+    setQuestionLoading(true)
+    setView('tree')
+    try {
+      const nodeRows = await fetchTreeNodes(tree.id)
+      setResumeData({
+        treeId: tree.id,
+        elapsedSeconds: tree.duration_seconds ?? 0,
+        ...buildEditableTree(nodeRows),
+      })
+      setQuestion({ id: tree.id, type: tree.question_type, text: tree.question_text })
+    } finally {
+      setQuestionLoading(false)
+    }
   }
 
   if (loading) {
@@ -41,7 +63,7 @@ function App() {
   }
 
   if (view === 'home') {
-    return <HomePage onStart={startNewTree} />
+    return <HomePage onStart={startNewTree} onResume={resumeTree} />
   }
 
   return (
@@ -80,14 +102,22 @@ function App() {
 
       <Box sx={{ flex: 1 }}>
         {question && (
-          <LogicTree key={question.id} question={question} timerMinutes={timerMinutes} />
+          <LogicTree
+            key={question.id}
+            question={question}
+            timerMinutes={timerMinutes}
+            resumeData={resumeData}
+          />
         )}
       </Box>
 
       <QuestionPicker
         open={pickerOpen}
         onClose={() => setPickerOpen(false)}
-        onSelect={setQuestion}
+        onSelect={(q) => {
+          setResumeData(null)
+          setQuestion(q)
+        }}
       />
     </Box>
   )

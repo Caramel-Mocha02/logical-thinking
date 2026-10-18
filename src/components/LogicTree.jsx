@@ -85,21 +85,33 @@ function getPathToNode(nodes, edges, nodeId) {
   return path
 }
 
-function LogicTree({ question, timerMinutes }) {
+// 再開時、既存ノードのid("node-7"など)と衝突しない次のidの番号を求める
+function computeNextId(nodeList) {
+  const max = (nodeList ?? []).reduce((acc, n) => {
+    const match = /^node-(\d+)$/.exec(n.id)
+    return match ? Math.max(acc, Number(match[1])) : acc
+  }, 0)
+  return max + 1
+}
+
+function LogicTree({ question, timerMinutes, resumeData }) {
   return (
     <ReactFlowProvider>
-      <LogicTreeInner question={question} timerMinutes={timerMinutes} />
+      <LogicTreeInner question={question} timerMinutes={timerMinutes} resumeData={resumeData} />
     </ReactFlowProvider>
   )
 }
 
 // useUpdateNodeInternalsなどのReact FlowのフックはReactFlowProviderの内側でしか
 // 使えないため、実際の処理はこの内側コンポーネントで行う
-function LogicTreeInner({ question, timerMinutes }) {
+// resumeDataがあれば、新規作成ではなく保存済みツリーの続きから再開する
+function LogicTreeInner({ question, timerMinutes, resumeData }) {
   const { session } = useAuth()
-  const [nodes, setNodes, onNodesChange] = useNodesState(() => createInitialNodes(question))
-  const [edges, setEdges, onEdgesChange] = useEdgesState([])
-  const [nextId, setNextId] = useState(1)
+  const [nodes, setNodes, onNodesChange] = useNodesState(
+    () => resumeData?.nodes ?? createInitialNodes(question),
+  )
+  const [edges, setEdges, onEdgesChange] = useEdgesState(() => resumeData?.edges ?? [])
+  const [nextId, setNextId] = useState(() => computeNextId(resumeData?.nodes))
   const [saveStatus, setSaveStatus] = useState('idle') // 'idle' | 'saving' | 'saved' | 'error'
   const [snackbar, setSnackbar] = useState(null) // { severity, message }
   const [evaluating, setEvaluating] = useState(false)
@@ -113,13 +125,13 @@ function LogicTreeInner({ question, timerMinutes }) {
   const [nodeCheckResult, setNodeCheckResult] = useState(null) // { targetContent, scores, feedback }
   const [nodeCheckOpen, setNodeCheckOpen] = useState(false)
   const [orientation, setOrientation] = useState('vertical') // 'vertical' または 'horizontal'
-  const [elapsedSeconds, setElapsedSeconds] = useState(0)
+  const [elapsedSeconds, setElapsedSeconds] = useState(resumeData?.elapsedSeconds ?? 0)
   const [locked, setLocked] = useState(false) // タイムアタックの時間切れでロック中かどうか
   const reactFlowInstanceRef = useRef(null)
   const updateNodeInternals = useUpdateNodeInternals()
 
-  const sessionStartRef = useRef(Date.now())
-  const treeIdRef = useRef(null)
+  const sessionStartRef = useRef(Date.now() - (resumeData?.elapsedSeconds ?? 0) * 1000)
+  const treeIdRef = useRef(resumeData?.treeId ?? null)
   const autosaveTimeoutRef = useRef(null)
   const latestRef = useRef({ nodes, edges, evaluation })
 
